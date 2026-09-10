@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daniel's Pokedex</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #08080a; overflow: hidden;
+    font-family: -apple-system, "Segoe UI", sans-serif;
+  }
+
+  /* ============================= layer stack =============================
+     #uiLayer   z1  — the dex interface, hidden until the flash hands over
+     #landing   z10 — intro animation, removed once it has handed over
+     #fullFlash z20 — the white burst that covers the swap
+     #replay    z30 — always reachable
+     ====================================================================== */
+
+  #uiLayer {
+    position: fixed; inset: 0; z-index: 1;
+    background: #08080a;
+    opacity: 0; visibility: hidden;
+  }
+  #uiLayer.on { opacity: 1; visibility: visible; }
+  #uiStage { position: absolute; inset: 0; overflow: hidden; }
+  #dex {
+    position: absolute;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    will-change: transform;
+  }
+
+  #landing {
+    position: fixed; inset: 0; z-index: 10;
+    background: #0b0b0d;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  #landing.gone { display: none; }
+
+  #titleWrap { text-align: center; margin-bottom: -108px; position: relative; top: -58px; z-index: 4; }
+  #titleCanvas {
+    display: block; margin: 0 auto;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+  }
+  #hintCanvas {
+    display: block; margin: 26px auto 0;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    animation: hintPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes hintPulse {
+    0%, 100% { opacity: 0.12; }
+    50%      { opacity: 1; }
+  }
+  #rigWrap {
+    position: relative; width: 432px; height: 567px;
+    cursor: pointer; perspective: 1700px;
+  }
+  #rig {
+    position: relative; width: 432px; height: 567px;
+    transform-style: preserve-3d;
+  }
+  canvas.face {
+    position: absolute; top: 0; left: 0;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+  }
+  #base, #backPlate, #lidOuter, #lidInner { backface-visibility: hidden; }
+  #backPlate { transform: rotateY(180deg); }
+  #lidHinge {
+    position: absolute; top: 0; left: 0;
+    width: 432px; height: 567px;
+    transform-origin: 91.667% 50%;
+    transform-style: preserve-3d;
+  }
+  #lidInner { transform: rotateY(180deg); visibility: hidden; }
+
+  #fullFlash {
+    position: fixed; top: 0; left: 0;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    z-index: 20; pointer-events: none; opacity: 0;
+  }
+
+  #replay {
+    position: fixed; bottom: 26px; right: 26px;
+    background: transparent; border: 1px solid #3c3c46; color: #7e7e8c;
+    font-size: 12px; padding: 8px 16px; border-radius: 6px; cursor: pointer;
+    letter-spacing: 1px; text-transform: uppercase; z-index: 30;
+    opacity: 0; pointer-events: none; transition: opacity 300ms ease;
+  }
+  #replay.visible { opacity: 1; pointer-events: auto; }
+  #replay:hover { background: #1b1b21; color: #cfcfda; border-color: #55555f; }
+</style>
+</head>
+<body>
+
+<div id="uiLayer">
+  <div id="uiStage"><canvas id="dex"></canvas></div>
+</div>
+
+<div id="landing">
+  <div id="titleWrap">
+    <canvas id="titleCanvas"></canvas>
+    <canvas id="hintCanvas"></canvas>
+  </div>
+  <div id="rigWrap">
+    <div id="rig">
+      <canvas id="backPlate" class="face" width="432" height="567"></canvas>
+      <canvas id="base" class="face" width="432" height="567"></canvas>
+      <div id="lidHinge">
+        <canvas id="lidOuter" class="face" width="432" height="567"></canvas>
+        <canvas id="lidInner" class="face" width="432" height="567"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<canvas id="fullFlash"></canvas>
+<button id="replay">Replay</button>
+
+<script>
+// Bridge between the two scenes. The landing calls enterUI() the moment the
+// white burst covers the frame; the replay button calls resetUI().
+window.PORTFOLIO = {};
+</script>
+
+<!-- =====================================================================
+     SCENE 2 — the dex interface (was ui.html)
+     Defined first so PORTFOLIO.enterUI exists before anything can call it.
+     ===================================================================== -->
+<script>
+(function () {
+
+// ---------- unit space ----------
+const S = 4;                       // supersample: 1 unit = S grid cells
+const PH = 118;                    // panel height in units
+const CROP = 0;                    // unit rows lopped off the top; 0 frames the
+                                   // whole device, orb and status LEDs included
+const UW = 160, UH = PH + 1 - CROP;
+const GW = UW * S, GH = UH * S;    // grid cells (also canvas pixels)
+
+// Panel footprint and the ridge below are held to the landing animation's
+// artwork exactly, so the device that slides up is the one that opened.
+// The screen wins its room from the controls, never from the silhouette.
+const LPW = 80, RPW = 80;          // panel widths
+const LX = 0, RX = 80;             // panel left edges
+const HC0 = 74.5, HC1 = 85.5;      // hinge barrel straddles the seam
+
+// The diagonal along the top, expressed in each panel's own columns.
+const RIDGE_HI = 30, RIDGE_LO = 18;
+const RIDGE_A = 32, RIDGE_B = 49;  // left panel
+const R_A = 30,  R_B = 47;         // right panel, mirrored
+const CRAD = 5;
+
+const cv = document.getElementById('dex');
+const uiLayer = document.getElementById('uiLayer');
+cv.width = GW; cv.height = GH;
+const ctx = cv.getContext('2d');
+
+const P = {
+  red: '#d93b2b', redLight: '#ef6353', redMid: '#c93324',
+  redDark: '#a3241a', redShade: '#7d1a12', outline: '#100e0e',
+  screen: '#3a3b41',                 // right panel's caption screen
+  screenFace: '#b9bcc0',             // main screen at idle — an unlit LCD
+  screenBezel: '#9fa3a8',
+  chrome: '#eef0f1', chromeDark: '#8f979e',
+  blue: '#6cc0e8', blueDark: '#24617f',
+  yellow: '#e8b93c', yellowDark: '#a9791d',
+  darkPad: '#414f2e',
+  green: '#6ab04c', greenLight: '#8ecb6d',
+  slate: '#4a4a54', slateDark: '#2c2c34',
+  maroon: '#8b2f26'
+};
+
+// ---------- grid primitives (unit coords, scaled by S) ----------
+// Everything is authored in full panel rows 0..PH; the primitives subtract
+// CROP on the way in, so anything above the crop line falls off the canvas.
+const g = Array.from({length: GH}, () => Array(GW).fill(null));
+
+function px(x, y, c) {
+  const i = Math.round(x), j = Math.round(y);
+  if (i >= 0 && i < GW && j >= 0 && j < GH) g[j][i] = c;
+}
+function set(x, y, w, h, c) {
+  const x0 = Math.round(x * S), y0 = Math.round((y - CROP) * S);
+  const x1 = Math.round((x + w) * S), y1 = Math.round((y + h - CROP) * S);
+  for (let j = y0; j < y1; j++) for (let i = x0; i < x1; i++) px(i, j, c);
+}
+function circle(cx, cy, r, c) {
+  const CX = cx * S, CY = (cy - CROP) * S, R = r * S;
+  for (let j = Math.floor(CY - R); j <= Math.ceil(CY + R); j++)
+    for (let i = Math.floor(CX - R); i <= Math.ceil(CX + R); i++) {
+      const dx = i + 0.5 - CX, dy = j + 0.5 - CY;
+      if (dx * dx + dy * dy <= R * R) px(i, j, c);
+    }
+}
+function roundRect(x, y, w, h, rad, c) {
+  const H = Math.round(h * S);
+  for (let k = 0; k < H; k++) {
+    const d = Math.min(k, H - 1 - k) / S;
+    let ins = 0;
+    if (d < rad) ins = rad - Math.sqrt(Math.max(0, rad * rad - (rad - d) * (rad - d)));
+    const y0 = Math.round((y - CROP) * S) + k;
+    const x0 = Math.round((x + ins) * S), x1 = Math.round((x + w - ins) * S);
+    for (let i = x0; i < x1; i++) px(i, y0, c);
+  }
+}
+function chamferRect(x, y, w, h, cham, c, fromRow) {
+  const H = Math.round(h * S);
+  const k0 = fromRow === undefined ? 0 : Math.round(fromRow * S);
+  for (let k = k0; k < H; k++) {
+    const fb = (H - 1 - k) / S;
+    let cut = 0;
+    if (fb < cham) cut = cham - fb;
+    const y0 = Math.round((y - CROP) * S) + k;
+    const x0 = Math.round((x + cut) * S), x1 = Math.round((x + w) * S);
+    for (let i = x0; i < x1; i++) px(i, y0, c);
+  }
+}
+
+const FONT = {
+ 'A':['.###.','#...#','#...#','#####','#...#','#...#','#...#'],
+ 'B':['####.','#...#','#...#','####.','#...#','#...#','####.'],
+ 'C':['.####','#....','#....','#....','#....','#....','.####'],
+ 'D':['####.','#...#','#...#','#...#','#...#','#...#','####.'],
+ 'E':['#####','#....','#....','####.','#....','#....','#####'],
+ 'F':['#####','#....','#....','####.','#....','#....','#....'],
+ 'G':['.####','#....','#....','#.###','#...#','#...#','.###.'],
+ 'H':['#...#','#...#','#...#','#####','#...#','#...#','#...#'],
+ 'I':['#####','..#..','..#..','..#..','..#..','..#..','#####'],
+ 'J':['....#','....#','....#','....#','#...#','#...#','.###.'],
+ 'K':['#...#','#..#.','#.#..','##...','#.#..','#..#.','#...#'],
+ 'L':['#....','#....','#....','#....','#....','#....','#####'],
+ 'M':['#...#','##.##','#.#.#','#.#.#','#...#','#...#','#...#'],
+ 'N':['#...#','##..#','##..#','#.#.#','#..##','#..##','#...#'],
+ 'O':['.###.','#...#','#...#','#...#','#...#','#...#','.###.'],
+ 'P':['####.','#...#','#...#','####.','#....','#....','#....'],
+ 'Q':['.###.','#...#','#...#','#...#','#.#.#','#..#.','.##.#'],
+ 'R':['####.','#...#','#...#','####.','#.#..','#..#.','#...#'],
+ 'S':['.####','#....','#....','.###.','....#','....#','####.'],
+ 'T':['#####','..#..','..#..','..#..','..#..','..#..','..#..'],
+ 'U':['#...#','#...#','#...#','#...#','#...#','#...#','.###.'],
+ 'V':['#...#','#...#','#...#','#...#','#...#','.#.#.','..#..'],
+ 'W':['#...#','#...#','#...#','#.#.#','#.#.#','##.##','#...#'],
+ 'X':['#...#','#...#','.#.#.','..#..','.#.#.','#...#','#...#'],
+ 'Y':['#...#','#...#','.#.#.','..#..','..#..','..#..','..#..'],
+ 'Z':['#####','....#','...#.','..#..','.#...','#....','#####'],
+ ' ':['.....','.....','.....','.....','.....','.....','.....']
+};
+function textW(str, sc) { return (str.length * 6 - 1) * sc; }
+function textCells(cx, cy, str, sc, color) {
+  let x = cx;
+  for (const ch of str.toUpperCase()) {
+    const gl = FONT[ch];
+    if (gl) for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++)
+      if (gl[r][c] === '#')
+        for (let a = 0; a < sc; a++) for (let b = 0; b < sc; b++)
+          px(x + c * sc + a, cy + r * sc + b, color);
+    x += 6 * sc;
+  }
+}
+function arrow(cx, cy, len, dir, color) {
+  const st = 1 / S;
+  for (let k = 0; k * st <= len; k++) {
+    const d = k * st, h = d * 0.85;
+    if (dir === 'u') set(cx - h, cy + d, h * 2 + st, st, color);
+    if (dir === 'd') set(cx - h, cy - d, h * 2 + st, st, color);
+    if (dir === 'l') set(cx + d, cy - h, st, h * 2 + st, color);
+    if (dir === 'r') set(cx - d, cy - h, st, h * 2 + st, color);
+  }
+}
+
+// ---------- panel silhouettes ----------
+function cornerInset(row, top, bot) {
+  let d = 1e9;
+  if (top) d = Math.min(d, row);
+  if (bot) d = Math.min(d, PH - 1 - row);
+  if (d >= CRAD) return 0;
+  return CRAD - Math.sqrt(Math.max(0, CRAD * CRAD - (CRAD - d) * (CRAD - d)));
+}
+function ridgeRow(c) {              // left panel: tall at the outer edge
+  if (c <= RIDGE_A) return RIDGE_HI;
+  if (c >= RIDGE_B) return RIDGE_LO;
+  return RIDGE_HI - (RIDGE_HI - RIDGE_LO) * (c - RIDGE_A) / (RIDGE_B - RIDGE_A);
+}
+function ridgeRowR(c) {            // right panel: tall at the hinge, notched outward
+  if (c <= R_A) return RIDGE_LO;
+  if (c >= R_B) return RIDGE_HI;
+  return RIDGE_LO + (RIDGE_HI - RIDGE_LO) * (c - R_A) / (R_B - R_A);
+}
+function leftProfile(row) {
+  if (row < 0 || row > PH - 1) return null;
+  const ins = cornerInset(row, true, true);
+  return [ins, LPW - ins];
+}
+function rightProfile(row) {
+  if (row < 0 || row > PH - 1) return null;
+  let last = -1;
+  for (let c = 0; c < RPW; c++) if (ridgeRowR(c) <= row) last = c;
+  if (last < 0) return null;
+  const ins = cornerInset(row, false, true);
+  return [ins, Math.min(last + 1, RPW - ins)];
+}
+
+function fillPanel(ox, prof) {
+  const rows = [];
+  for (let row = 0; row < PH; row++) if (prof(row)) rows.push(row);
+  const r0 = rows[0], r1 = rows[rows.length - 1];
+  for (const row of rows) {
+    const b = prof(row);
+    set(ox + b[0], row, b[1] - b[0], 1, P.red);
+    set(ox + b[0], row, 1.5, 1, P.redLight);
+    set(ox + b[1] - 1.5, row, 1.5, 1, P.redDark);
+    if (row <= r0 + 1.2) set(ox + b[0], row, b[1] - b[0], 1, P.redLight);
+    if (row >= r1 - 1.2) set(ox + b[0], row, b[1] - b[0], 1, P.redDark);
+  }
+  for (const row of rows) {
+    const b = prof(row);
+    set(ox + b[0], row, 0.55, 1, P.outline);
+    set(ox + b[1] - 0.55, row, 0.55, 1, P.outline);
+  }
+  const a = prof(r0), z = prof(r1);
+  if (a) set(ox + a[0], r0, a[1] - a[0], 0.55, P.outline);
+  if (z) set(ox + z[0], r1 + 0.45, z[1] - z[0], 0.55, P.outline);
+}
+
+// ---------- left panel ----------
+const DX = 61, DY = 107.5;   // d-pad centre, in left-panel units
+
+function drawLeft(ox) {
+  fillPanel(ox, leftProfile);
+
+  // the diagonal seam across the top band
+  for (let c = 1; c < LPW - 1; c += 0.25) {
+    const rr = ridgeRow(c);
+    set(ox + c, rr, 0.25, 0.55, P.outline);
+    set(ox + c, rr - 0.5, 0.25, 0.5, P.redLight);
+  }
+
+  // orb and status LEDs — kept at the landing artwork's size and position
+  const OX = ox + 16, OY = 15;
+  circle(OX, OY, 10.4, P.outline);
+  circle(OX, OY, 9.4, P.chrome);
+  circle(OX, OY, 7.6, P.outline);
+  circle(OX, OY, 6.7, P.blueDark);
+  circle(OX - 0.5, OY - 0.7, 5.4, P.blue);
+  circle(OX - 1.9, OY - 2.3, 2.4, '#c5e9fb');
+
+  [[31, '#e0402f'], [37, '#f0c23c'], [43, '#5fae4f']].forEach(function (L) {
+    circle(ox + L[0], 7, 2.7, P.outline);
+    circle(ox + L[0], 7, 1.9, L[1]);
+  });
+
+  // ---- main screen: a rounded LCD with an even white margin around it ----
+  chamferRect(ox + 3, 31, 74, 66, 11, P.outline);
+  chamferRect(ox + 3.8, 31.8, 72.4, 64.4, 10.2, P.chrome);
+
+  roundRect(ox + 9, 37, 62, 47, 3.0, P.outline);
+  roundRect(ox + 9.9, 37.9, 60.2, 45.2, 2.4, P.screenBezel);
+  roundRect(ox + 10.5, 38.5, 59, 44, 2.0, P.screenFace);
+
+  circle(ox + 32, 34, 1.5, '#4a1710');
+  circle(ox + 42, 34, 1.5, '#4a1710');
+  circle(ox + 32, 34, 1.0, '#d0392c');
+  circle(ox + 42, 34, 1.0, '#d0392c');
+  circle(ox + 14, 89, 2.0, '#4a1710');
+  circle(ox + 14, 89, 1.4, '#d0392c');
+  for (let k = 0; k < 5; k++) set(ox + 55, 87.5 + k * 1.5, 15, 0.6, P.chromeDark);
+
+  // ---- controls, in the last 19 rows ----
+  circle(ox + 9, 105, 3.4, P.outline);
+  circle(ox + 9, 105, 2.7, '#18181c');
+
+  roundRect(ox + 15, 100.5, 12, 2.8, 1.4, P.outline);
+  roundRect(ox + 15.5, 101, 11, 1.8, 0.9, P.maroon);
+  roundRect(ox + 28.5, 100.5, 12, 2.8, 1.4, P.outline);
+  roundRect(ox + 29, 101, 11, 1.8, 0.9, '#4a9ed8');
+
+  roundRect(ox + 15, 104.5, 30, 11, 1.2, P.outline);
+  roundRect(ox + 15.6, 105.1, 28.8, 9.8, 1.0, P.green);
+  roundRect(ox + 15.6, 105.1, 28.8, 1.2, 1.0, P.greenLight);
+
+  // A clean plus. The arrow glyphs are gone: at this size they rendered as
+  // four blobs rather than four arrows.
+  const dx = ox + DX;
+  set(dx - 2.6, DY - 8.5, 5.2, 17, P.outline);
+  set(dx - 8.5, DY - 2.6, 17, 5.2, P.outline);
+  set(dx - 2.0, DY - 7.9, 4.0, 15.8, P.slate);
+  set(dx - 7.9, DY - 2.0, 15.8, 4.0, P.slate);
+  circle(dx, DY, 1.3, P.slateDark);
+}
+
+// ---------- right panel ----------
+// The right half keeps its footprint but every feature on it shrinks — that's
+// where the main screen's extra rows and columns come from.
+const KEYS = [['HOME', 'ABOUT', 'WORK', 'SKILLS', 'CONTACT'],
+              ['RESUME', 'GITHUB', 'BLOG', 'GALLERY', 'MORE']];
+const KEY_X = 8, KEY_Y = 60, KEY_W = 12.4, KEY_H = 7.6;
+
+function drawRight(ox) {
+  fillPanel(ox, rightProfile);
+
+  // secondary screen — a caption strip, not a second stage
+  set(ox + 8, 33, 62, 22, P.outline);
+  set(ox + 9, 34, 60, 20, P.screen);
+
+  for (let r = 0; r < KEYS.length; r++)
+    for (let c = 0; c < KEYS[r].length; c++) {
+      const x = ox + KEY_X + c * KEY_W, y = KEY_Y + r * KEY_H;
+      set(x, y, KEY_W, KEY_H, P.blueDark);
+      set(x + 0.5, y + 0.5, KEY_W - 1, KEY_H - 1, P.blue);
+      const lab = KEYS[r][c];
+      const wCells = textW(lab, 1);
+      textCells(Math.round((x + KEY_W / 2) * S - wCells / 2),
+                Math.round((y + KEY_H / 2 - CROP) * S - 3.5), lab, 1, '#0d3550');
+      set(x + 0.5, y + KEY_H - 1.3, KEY_W - 1, 0.7, '#4a92bb');
+    }
+
+  set(ox + 44, 79, 10, 1.8, P.outline);
+  set(ox + 56, 79, 10, 1.8, P.outline);
+
+  set(ox + 8, 83, 22, 9.5, P.outline);
+  set(ox + 8.8, 83.8, 10.2, 7.9, P.chrome);
+  set(ox + 19.6, 83.8, 10.2, 7.9, P.chrome);
+
+  circle(ox + 62, 87.5, 3.6, P.outline);
+  circle(ox + 62, 87.5, 2.9, P.yellowDark);
+  circle(ox + 61.8, 87.2, 2.3, P.yellow);
+  circle(ox + 61.0, 86.4, 1.1, '#f8e2a0');
+
+  set(ox + 8, 96, 28, 16, P.outline);
+  set(ox + 8.8, 96.8, 26.4, 14.4, P.darkPad);
+  set(ox + 40, 96, 28, 16, P.outline);
+  set(ox + 40.8, 96.8, 26.4, 14.4, P.darkPad);
+}
+
+// ---------- hinge barrel ----------
+function drawHinge(c0, c1, r0, r1) {
+  const w = c1 - c0;
+  const shades = ['#7d1a12', '#a3241a', '#c93324', P.red, '#e8564a', '#ef6353',
+                  '#e8564a', P.red, '#c93324', '#a3241a', '#7d1a12'];
+  for (let k = 0; k < shades.length; k++) {
+    const x = c0 + (k / shades.length) * w;
+    set(x, r0, w / shades.length + 0.05, r1 - r0, shades[k]);
+  }
+  set(c0, r0, 0.55, r1 - r0, P.outline);
+  set(c1 - 0.55, r0, 0.55, r1 - r0, P.outline);
+  set(c0, r0, w, 0.6, P.outline);
+  set(c0, r1 - 0.6, w, 0.6, P.outline);
+  [r0 + 7, r1 - 8].forEach(function (ry) {
+    set(c0, ry, w, 0.9, P.outline);
+  });
+}
+
+// ---------- compose ----------
+drawLeft(LX);
+drawRight(RX);
+drawHinge(HC0, HC1, RIDGE_LO, PH);
+
+function postProcess(img) {
+  const d = img.data, W = GW, H = GH, N = W * H;
+  const mask = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const o = i * 4;
+    if (d[o + 3] === 0) { mask[i] = 1; continue; }
+    const lum = d[o] * 0.3 + d[o + 1] * 0.59 + d[o + 2] * 0.11;
+    mask[i] = lum < 48 ? 1 : 0;
+  }
+  const R = 4, span = 2 * R + 1;
+  const tmp = new Float32Array(N), ao = new Float32Array(N);
+  const cl = (v, m) => v < 0 ? 0 : (v > m ? m : v);
+  for (let y = 0; y < H; y++) {
+    let acc = 0;
+    for (let k = -R; k <= R; k++) acc += mask[y * W + cl(k, W - 1)];
+    for (let x = 0; x < W; x++) {
+      tmp[y * W + x] = acc / span;
+      acc += mask[y * W + cl(x + R + 1, W - 1)] - mask[y * W + cl(x - R, W - 1)];
+    }
+  }
+  for (let x = 0; x < W; x++) {
+    let acc = 0;
+    for (let k = -R; k <= R; k++) acc += tmp[cl(k, H - 1) * W + x];
+    for (let y = 0; y < H; y++) {
+      ao[y * W + x] = acc / span;
+      acc += tmp[cl(y + R + 1, H - 1) * W + x] - tmp[cl(y - R, H - 1) * W + x];
+    }
+  }
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x, o = i * 4;
+      if (d[o + 3] === 0) continue;
+      // Lighter touch than before: more outlines now sit close together, and a
+      // heavy occlusion pass turns those clusters to mush.
+      let k = 1.06 - 0.13 * (y / H) - 0.03 * Math.abs(x / W - 0.42);
+      k *= 1 - Math.min(0.17, ao[i] * 0.36);
+      for (let c = 0; c < 3; c++) {
+        const v = d[o + c] * k;
+        d[o + c] = v < 0 ? 0 : (v > 255 ? 255 : v);
+      }
+    }
+  }
+}
+
+const img = ctx.createImageData(GW, GH);
+for (let j = 0; j < GH; j++)
+  for (let i = 0; i < GW; i++) {
+    const c = g[j][i];
+    const o = (j * GW + i) * 4;
+    if (!c) { img.data[o + 3] = 0; continue; }
+    img.data[o]     = parseInt(c.slice(1, 3), 16);
+    img.data[o + 1] = parseInt(c.slice(3, 5), 16);
+    img.data[o + 2] = parseInt(c.slice(5, 7), 16);
+    img.data[o + 3] = 255;
+  }
+postProcess(img);
+ctx.putImageData(img, 0, 0);
+
+// ---------- interaction API ----------
+// Every region below is in UNIT space (the same coords the artwork is drawn in).
+// DEX_UI.rect(name) converts one to viewport pixels so you can absolutely
+// position an HTML element on top of it.
+const REGIONS = {};
+(function buildRegions() {
+  for (let r = 0; r < KEYS.length; r++)
+    for (let c = 0; c < KEYS[r].length; c++)
+      REGIONS['key:' + KEYS[r][c]] =
+        { x: RX + KEY_X + c * KEY_W, y: KEY_Y + r * KEY_H,
+          w: KEY_W, h: KEY_H, label: KEYS[r][c] };
+
+  REGIONS['screen:left']   = { x: LX + 10.5, y: 38.5, w: 59, h: 44 };
+  REGIONS['screen:right']  = { x: RX + 9,    y: 34,   w: 60, h: 20 };
+
+  REGIONS['dpad:up']       = { x: LX + DX - 2.6, y: DY - 8.5, w: 5.2, h: 5.9 };
+  REGIONS['dpad:down']     = { x: LX + DX - 2.6, y: DY + 2.6, w: 5.2, h: 5.9 };
+  REGIONS['dpad:left']     = { x: LX + DX - 8.5, y: DY - 2.6, w: 5.9, h: 5.2 };
+  REGIONS['dpad:right']    = { x: LX + DX + 2.6, y: DY - 2.6, w: 5.9, h: 5.2 };
+
+  REGIONS['btn:black']     = { x: LX + 5.6,  y: 101.6, w: 6.8,  h: 6.8 };
+  REGIONS['btn:red']       = { x: LX + 15,   y: 100.5, w: 12,   h: 2.8 };
+  REGIONS['btn:blue']      = { x: LX + 28.5, y: 100.5, w: 12,   h: 2.8 };
+  REGIONS['btn:gold']      = { x: RX + 58.4, y: 83.9,  w: 7.2,  h: 7.2 };
+  REGIONS['btn:white1']    = { x: RX + 8.8,  y: 83.8,  w: 10.2, h: 7.9 };
+  REGIONS['btn:white2']    = { x: RX + 19.6, y: 83.8,  w: 10.2, h: 7.9 };
+
+  REGIONS['panel:green']   = { x: LX + 15, y: 104.5, w: 30, h: 11 };
+  REGIONS['panel:dark1']   = { x: RX + 8,  y: 96,    w: 28, h: 16 };
+  REGIONS['panel:dark2']   = { x: RX + 40, y: 96,    w: 28, h: 16 };
+})();
+
+let curP = 1, curLeft = 0, curTop = 0;
+
+window.DEX_UI = {
+  regions: REGIONS,
+  // viewport-pixel box for a named region, valid once the slide has settled
+  rect(name) {
+    const r = REGIONS[name];
+    if (!r) return null;
+    return {
+      left:   curLeft + r.x * S * curP,
+      top:    curTop  + (r.y - CROP) * S * curP,   // regions are in full panel rows
+      width:  r.w * S * curP,
+      height: r.h * S * curP
+    };
+  },
+  rects() {
+    const out = {};
+    for (const k in REGIONS) out[k] = this.rect(k);
+    return out;
+  },
+  keys: KEYS,
+  onLayout: null,     // assign a callback; fires after layout/resize
+  replay() { window.PORTFOLIO.enterUI(); }
+};
+
+// ---------- layout + slide-up ----------
+// The entire device is on the canvas, so the orb and status LEDs sweep up
+// through the frame during the slide. Where it settles, the BOTTOM edge is
+// anchored and whatever doesn't fit spills off the top — never off the sides,
+// so the silhouette you watched open is never cut in half.
+let restTop = 0, startTop = 0, revealed = false;
+const CUT = 26;          // unit row the settled frame aims to start at, just
+                         // past the orb — the LEDs land above the fold
+const FIT = 0.98;        // horizontal breathing room
+const BOTTOM_GAP = 12;   // px of dark left under the device
+const MAX_P = 6;         // never upscale past this on very large displays
+function layout() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const bandH = (PH + 1 - CUT) * S;                   // cells we want framed
+  const p = Math.min(vh / bandH, vw * FIT / GW, MAX_P);
+  const w = GW * p, h = GH * p;
+  cv.style.width = w + 'px';
+  cv.style.height = h + 'px';
+  cv.style.left = ((vw - w) / 2) + 'px';
+  cv.style.top = '0px';
+  // Tall, narrow windows can hold the whole device; there, centre it instead
+  // of cropping something that already fits.
+  const devH = (PH + 1) * S * p;
+  restTop = devH + BOTTOM_GAP <= vh ? (vh - devH) / 2
+                                    : vh - devH - BOTTOM_GAP;
+  startTop = vh + 20;
+  curP = p;
+  curLeft = (vw - w) / 2;
+  curTop = restTop;
+  if (window.DEX_UI && typeof window.DEX_UI.onLayout === 'function') window.DEX_UI.onLayout();
+}
+
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+const SLIDE_MS = 1000;
+let slideStart = null;
+function slide(ts) {
+  if (!slideStart) slideStart = ts;
+  const t = Math.min((ts - slideStart) / SLIDE_MS, 1);
+  const y = startTop + (restTop - startTop) * easeOutCubic(t);
+  cv.style.transform = 'translateY(' + y + 'px)';
+  if (t < 1) requestAnimationFrame(slide);
+}
+
+window.addEventListener('resize', function () {
+  layout();
+  cv.style.transform = 'translateY(' + (revealed ? restTop : startTop) + 'px)';
+});
+
+// --- handoff points used by the landing scene ---
+window.PORTFOLIO.enterUI = function () {
+  revealed = true;
+  uiLayer.classList.add('on');
+  layout();
+  cv.style.transform = 'translateY(' + startTop + 'px)';
+  slideStart = null;
+  requestAnimationFrame(slide);
+};
+window.PORTFOLIO.resetUI = function () {
+  revealed = false;
+  uiLayer.classList.remove('on');
+  layout();
+  cv.style.transform = 'translateY(' + startTop + 'px)';
+};
+
+// park it below the fold; the landing scene decides when it comes up
+layout();
+cv.style.transform = 'translateY(' + startTop + 'px)';
+
+})();
+</script>
+
+<!-- =====================================================================
+     SCENE 1 — the opening animation (was landing.html)
+     ===================================================================== -->
+<script>
+(function () {
+
+const GLYPHS = {
+  'A': ['.###.','#...#','#...#','#####','#...#','#...#','#...#'],
+  'C': ['.####','#....','#....','#....','#....','#....','.####'],
+  'D': ['####.','#...#','#...#','#...#','#...#','#...#','####.'],
+  'E': ['#####','#....','#....','####.','#....','#....','#####'],
+  'I': ['#####','..#..','..#..','..#..','..#..','..#..','#####'],
+  'K': ['#...#','#..#.','#.#..','##...','#.#..','#..#.','#...#'],
+  'L': ['#....','#....','#....','#....','#....','#....','#####'],
+  'N': ['#...#','##..#','##..#','#.#.#','#..##','#..##','#...#'],
+  'O': ['.###.','#...#','#...#','#...#','#...#','#...#','.###.'],
+  'P': ['####.','#...#','#...#','####.','#....','#....','#....'],
+  'S': ['.####','#....','#....','.###.','....#','....#','####.'],
+  'T': ['#####','..#..','..#..','..#..','..#..','..#..','..#..'],
+  'X': ['#...#','#...#','.#.#.','..#..','.#.#.','#...#','#...#'],
+  "'": ['..#..','..#..','.....','.....','.....','.....','.....'],
+  ' ': ['.....','.....','.....','.....','.....','.....','.....']
+};
+
+function drawPixelText(canvas, text, scale, color, gap) {
+  const CW = 5, CH = 7;
+  const chars = text.split('');
+  const cells = chars.length * (CW + gap) - gap;
+  canvas.width = Math.ceil(cells * scale);
+  canvas.height = Math.ceil(CH * scale);
+  const c2 = canvas.getContext('2d');
+  c2.clearRect(0, 0, canvas.width, canvas.height);
+  c2.fillStyle = color;
+  chars.forEach(function(chr, idx) {
+    const gl = GLYPHS[chr.toUpperCase()];
+    if (!gl) return;
+    for (let r = 0; r < CH; r++)
+      for (let c = 0; c < CW; c++)
+        if (gl[r][c] === '#')
+          c2.fillRect(Math.round((idx * (CW + gap) + c) * scale), Math.round(r * scale),
+                      Math.ceil(scale), Math.ceil(scale));
+  });
+}
+
+drawPixelText(document.getElementById('titleCanvas'), "DANIEL'S POKEDEX", 2, '#ffffff', 2);
+drawPixelText(document.getElementById('hintCanvas'), 'CLICK TO OPEN', 1.35, '#ffffff', 2);
+
+const W = 432, H = 567;
+const GRID_C = 96, GRID_R = 126;
+const BLOCK = W / GRID_C;
+const MIRROR = GRID_C - 1;
+
+const baseCtx = document.getElementById('base').getContext('2d');
+const backCtx = document.getElementById('backPlate').getContext('2d');
+const lidOutCtx = document.getElementById('lidOuter').getContext('2d');
+const lidInCtx = document.getElementById('lidInner').getContext('2d');
+const lidInnerEl = document.getElementById('lidInner');
+const rig = document.getElementById('rig');
+const rigWrap = document.getElementById('rigWrap');
+const lidHinge = document.getElementById('lidHinge');
+const titleWrap = document.getElementById('titleWrap');
+const replayBtn = document.getElementById('replay');
+const fullFlash = document.getElementById('fullFlash');
+const flashCtx = fullFlash.getContext('2d');
+const landingEl = document.getElementById('landing');
+
+const P = {
+  red: '#d6362a', redLight: '#ec5f52', redMid: '#c02e23',
+  redDark: '#9c231a', redShade: '#7a1a13',
+  outline: '#0a0a0c', screen: '#131316',
+  chrome: '#eef1f3', chromeMid: '#cdd3d8', chromeDark: '#8f979e',
+  blue: '#54b0e4', blueMid: '#3a94cc', blueDark: '#1f6f9c',
+  yellow: '#f0c23c', yellowDark: '#b8891f',
+  darkPad: '#15251b', green: '#84c95f', greenDark: '#5c9440',
+  maroon: '#8f2a22', gold: '#e8b93c'
+};
+
+function blank() { return Array.from({length: GRID_R}, () => Array(GRID_C).fill(null)); }
+function set(g, x, y, w, h, c) {
+  for (let j = y; j < y + h; j++)
+    for (let i = x; i < x + w; i++)
+      if (i >= 0 && i < GRID_C && j >= 0 && j < GRID_R) g[j][i] = c;
+}
+function circle(g, cx, cy, r, c) {
+  for (let j = Math.floor(cy - r); j <= Math.ceil(cy + r); j++)
+    for (let i = Math.floor(cx - r); i <= Math.ceil(cx + r); i++) {
+      const dx = i - cx, dy = j - cy;
+      if (dx*dx + dy*dy <= r*r && i >= 0 && i < GRID_C && j >= 0 && j < GRID_R) g[j][i] = c;
+    }
+}
+function roundRect(g, x, y, w, h, rad, c) {
+  for (let j = 0; j < h; j++) {
+    const d = Math.min(j, h - 1 - j);
+    let ins = 0;
+    if (d < rad) ins = Math.round(rad - Math.sqrt(Math.max(0, rad*rad - (rad-d)*(rad-d))));
+    set(g, x + ins, y + j, w - 2*ins, 1, c);
+  }
+}
+
+const LEFT = 8, RIGHT = 87, TOP = 4, BOT = 121;
+const ORB_CX = 24, ORB_CY = 19;
+const CRAD = 5;
+
+function cornerInset(row, roundTop, roundBot) {
+  let d = 1e9;
+  if (roundTop) d = Math.min(d, row - TOP);
+  if (roundBot) d = Math.min(d, BOT - row);
+  if (d >= CRAD) return 0;
+  return Math.round(CRAD - Math.sqrt(Math.max(0, CRAD*CRAD - (CRAD-d)*(CRAD-d))));
+}
+
+function ridgeRow(col) {
+  const A = 40, B = 57, HI = 34, LO = 22;
+  if (col <= A) return HI;
+  if (col >= B) return LO;
+  return Math.round(HI - (HI - LO) * (col - A) / (B - A));
+}
+
+function chamferRect(g, x, y, w, h, cham, c) {
+  for (let j = 0; j < h; j++) {
+    const fb = h - 1 - j;
+    let x0 = x, w0 = w;
+    if (fb < cham) { const cut = cham - fb; x0 = x + cut; w0 = w - cut; }
+    if (w0 > 0) set(g, x0, y + j, w0, 1, c);
+  }
+}
+
+function baseProfile(row) {
+  if (row < TOP || row > BOT) return null;
+  const ins = cornerInset(row, true, true);
+  return [LEFT + ins, RIGHT - ins];
+}
+function lidProfile(row) {
+  if (row > BOT) return null;
+  let first = null;
+  for (let c = LEFT; c <= RIGHT; c++) if (ridgeRow(c) <= row) { first = c; break; }
+  if (first === null) return null;
+  const ins = cornerInset(row, false, true);
+  return [Math.max(first, LEFT + ins), RIGHT - ins];
+}
+function lidInnerProfile(row) {
+  const b = lidProfile(row);
+  if (!b) return null;
+  return [MIRROR - b[1], MIRROR - b[0]];
+}
+function lidOuterProfile(row) {
+  const b = lidProfile(row);
+  if (!b) return null;
+  return [Math.max(b[0], LEFT + 3), b[1]];
+}
+
+function fillProfile(g, fn, color) {
+  for (let j = 0; j < GRID_R; j++) { const b = fn(j); if (b) set(g, b[0], j, b[1]-b[0]+1, 1, color); }
+}
+function bevelProfile(g, fn) {
+  const rows = [];
+  for (let j = 0; j < GRID_R; j++) if (fn(j)) rows.push(j);
+  const r0 = rows[0], r1 = rows[rows.length-1];
+  for (const j of rows) {
+    const b = fn(j);
+    set(g, b[0], j, 3, 1, P.redLight);
+    set(g, b[1]-2, j, 3, 1, P.redShade);
+    if (j <= r0 + 2) set(g, b[0], j, b[1]-b[0]+1, 1, P.redLight);
+    if (j >= r1 - 2) set(g, b[0], j, b[1]-b[0]+1, 1, P.redShade);
+  }
+  for (const j of rows) { const b = fn(j); set(g, b[0], j, 1, 1, P.outline); set(g, b[1], j, 1, 1, P.outline); }
+  const bt = fn(r0), bb = fn(r1);
+  set(g, bt[0], r0, bt[1]-bt[0]+1, 1, P.outline);
+  set(g, bb[0], r1, bb[1]-bb[0]+1, 1, P.outline);
+}
+
+function baseGrid() {
+  const g = blank();
+  fillProfile(g, baseProfile, P.red);
+  bevelProfile(g, baseProfile);
+
+  for (let c = LEFT + 1; c < RIGHT; c++) {
+    const rr = ridgeRow(c);
+    set(g, c, rr, 1, 1, P.redShade);
+    set(g, c, rr + 1, 1, 1, P.redDark);
+    set(g, c, rr - 1, 1, 1, P.redLight);
+  }
+
+  circle(g, ORB_CX, ORB_CY, 10.6, P.outline);
+  circle(g, ORB_CX, ORB_CY, 9.6, P.chrome);
+  circle(g, ORB_CX, ORB_CY, 7.8, P.outline);
+  circle(g, ORB_CX, ORB_CY, 6.8, P.blueDark);
+  circle(g, ORB_CX, ORB_CY, 5.2, P.blue);
+  circle(g, ORB_CX - 2.4, ORB_CY - 2.6, 2.2, '#dff0ff');
+
+  [[39,'#e0402f'],[45,'#f0c23c'],[51,'#5fae4f']].forEach(function(L) {
+    circle(g, L[0], 11, 2.5, P.outline);
+    circle(g, L[0], 11, 1.5, L[1]);
+  });
+
+  chamferRect(g, 16, 38, 58, 48, 9, P.outline);
+  chamferRect(g, 17, 39, 56, 46, 8, P.chrome);
+  set(g, 17, 39, 56, 2, '#fbfdfe');
+  set(g, 23, 45, 44, 29, P.outline);
+  set(g, 24, 46, 42, 27, P.screen);
+  circle(g, 40, 42, 1.5, '#d0392c');
+  circle(g, 48, 42, 1.5, '#d0392c');
+  circle(g, 28, 80, 2.4, '#d0392c');
+  for (let k = 0; k < 4; k++) set(g, 61, 76 + k*2, 5, 1, P.chromeDark);
+
+  circle(g, 21, 93, 4.5, P.outline);
+  circle(g, 21, 93, 3.5, '#1d1d22');
+  circle(g, 19.8, 91.8, 1.2, '#3c3c46');
+
+  roundRect(g, 32, 90, 9, 3, 1, P.outline);
+  set(g, 33, 91, 7, 1, P.maroon);
+  roundRect(g, 42, 90, 9, 3, 1, P.outline);
+  set(g, 43, 91, 7, 1, '#3a8fd0');
+
+  set(g, 32, 96, 19, 14, P.outline);
+  set(g, 33, 97, 17, 12, P.greenDark);
+  set(g, 33, 97, 17, 10, P.green);
+
+  set(g, 61, 90, 7, 21, P.outline);
+  set(g, 55, 97, 19, 7, P.outline);
+  set(g, 62, 91, 5, 19, '#24242c');
+  set(g, 56, 98, 17, 5, '#24242c');
+  circle(g, 64, 100, 1.5, '#141419');
+
+  return g;
+}
+
+function backPlateGrid() {
+  const g = blank();
+  fillProfile(g, baseProfile, P.redMid);
+  bevelProfile(g, baseProfile);
+  roundRect(g, 20, 42, 56, 32, 3, P.redShade);
+  roundRect(g, 20, 88, 56, 12, 3, P.redShade);
+  return g;
+}
+
+function lidOuterGrid() {
+  const g = blank();
+  fillProfile(g, lidOuterProfile, P.red);
+  bevelProfile(g, lidOuterProfile);
+  for (let j = 0; j < GRID_R; j++) {
+    const b = lidOuterProfile(j);
+    if (!b) continue;
+    set(g, b[0] + 1, j, 2, 1, P.redShade);
+  }
+  for (let j = 0; j < GRID_R; j++) {
+    const b = lidOuterProfile(j);
+    if (!b) continue;
+    set(g, b[1] - 5, j, 1, 1, P.redLight);
+    set(g, b[1] - 4, j, 2, 1, P.red);
+  }
+  [40, 106].forEach(function(rr) {
+    const b = lidOuterProfile(rr);
+    if (b) set(g, b[1] - 5, rr, 6, 1, P.redShade);
+  });
+
+  const tri = [1,2,3,4,5,4,3,2,1];
+  for (let k = 0; k < tri.length; k++) set(g, 15, 72 + k, tri[k], 1, P.gold);
+  set(g, 32, 106, 32, 2, P.redDark);
+  return g;
+}
+
+function lidInnerDesign() {
+  const g = blank();
+  fillProfile(g, lidInnerProfile, P.red);
+  bevelProfile(g, lidInnerProfile);
+
+  set(g, 16, 40, 60, 24, P.outline);
+  set(g, 18, 42, 56, 20, P.screen);
+  set(g, 18, 42, 56, 1, '#26262c');
+
+  set(g, 16, 71, 61, 15, P.outline);
+  for (let r = 0; r < 2; r++)
+    for (let c = 0; c < 5; c++) {
+      const x = 17 + c*12, y = 72 + r*7;
+      set(g, x, y, 11, 6, P.blueMid);
+      set(g, x, y, 11, 4, P.blue);
+      set(g, x, y, 11, 1, '#7fc8f0');
+    }
+
+  set(g, 54, 87, 8, 2, P.outline);
+  set(g, 64, 87, 8, 2, P.outline);
+
+  set(g, 16, 91, 23, 10, P.outline);
+  set(g, 17, 92, 10, 8, P.chrome);
+  set(g, 28, 92, 10, 8, P.chrome);
+
+  circle(g, 67, 95, 3.5, P.outline);
+  circle(g, 67, 95, 2.6, P.yellowDark);
+  circle(g, 67, 95, 1.8, P.yellow);
+  circle(g, 66.2, 94.2, 0.8, '#ffe89a');
+
+  set(g, 16, 106, 29, 11, P.outline);
+  set(g, 17, 107, 27, 9, P.darkPad);
+  set(g, 47, 106, 29, 11, P.outline);
+  set(g, 48, 107, 27, 9, P.darkPad);
+
+  return g;
+}
+
+const baseG = baseGrid();
+const backG = backPlateGrid();
+const lidOutG = lidOuterGrid();
+const lidInG = lidInnerDesign();
+
+function drawAtResolution(ctx, grid, Nc) {
+  Nc = Math.max(4, Math.round(Nc));
+  const Nr = Math.max(4, Math.round(Nc * GRID_R / GRID_C));
+  const bw = W / Nc, bh = H / Nr;
+  ctx.clearRect(0, 0, W, H);
+  for (let j = 0; j < Nr; j++) {
+    const sy = Math.min(GRID_R - 1, Math.floor(j * GRID_R / Nr));
+    for (let i = 0; i < Nc; i++) {
+      const sx = Math.min(GRID_C - 1, Math.floor(i * GRID_C / Nc));
+      const c = grid[sy][sx];
+      if (!c) continue;
+      ctx.fillStyle = c;
+      ctx.fillRect(i * bw, j * bh, bw + 0.6, bh + 0.6);
+    }
+  }
+}
+
+const BASE_SCREEN = {x: 24*BLOCK, y: 46*BLOCK, w: 42*BLOCK, h: 27*BLOCK};
+const LID_SCREEN  = {x: 18*BLOCK, y: 42*BLOCK, w: 56*BLOCK, h: 20*BLOCK};
+const LEDS = [
+  {cx: 39*BLOCK, cy: 11*BLOCK, c: '#ff7a63'},
+  {cx: 45*BLOCK, cy: 11*BLOCK, c: '#ffe08a'},
+  {cx: 51*BLOCK, cy: 11*BLOCK, c: '#a6f090'}
+];
+
+function renderBase(N, screenW, ledGlows) {
+  drawAtResolution(baseCtx, baseG, N);
+  if (ledGlows) {
+    LEDS.forEach(function(L, i) {
+      const gl = ledGlows[i] || 0;
+      if (gl <= 0) return;
+      baseCtx.globalAlpha = Math.min(1, gl);
+      baseCtx.fillStyle = L.c;
+      baseCtx.beginPath();
+      baseCtx.arc(L.cx, L.cy, 2.2 * BLOCK, 0, Math.PI * 2);
+      baseCtx.fill();
+      baseCtx.globalAlpha = 1;
+    });
+  }
+  if (screenW > 0) {
+    baseCtx.globalAlpha = Math.min(1, screenW);
+    baseCtx.fillStyle = '#ffffff';
+    baseCtx.fillRect(BASE_SCREEN.x, BASE_SCREEN.y, BASE_SCREEN.w, BASE_SCREEN.h);
+    baseCtx.globalAlpha = 1;
+  }
+}
+
+function renderLidInner(N, screenW) {
+  drawAtResolution(lidInCtx, lidInG, N);
+  if (screenW > 0) {
+    lidInCtx.globalAlpha = Math.min(1, screenW);
+    lidInCtx.fillStyle = '#ffffff';
+    lidInCtx.fillRect(LID_SCREEN.x, LID_SCREEN.y, LID_SCREEN.w, LID_SCREEN.h);
+    lidInCtx.globalAlpha = 1;
+  }
+}
+
+function makeEdge(parent, side, x0, y0, x1, y1, depth, color) {
+  const d = document.createElement('div');
+  let css = 'position:absolute;background:' + color + ';backface-visibility:hidden;';
+  if (side === 'left')
+    css += `top:${y0}px;left:0;width:${depth}px;height:${y1-y0}px;transform-origin:100% 50%;transform:translateX(${x0-depth}px) rotateY(-90deg);`;
+  else if (side === 'right')
+    css += `top:${y0}px;left:0;width:${depth}px;height:${y1-y0}px;transform-origin:0% 50%;transform:translateX(${x1}px) rotateY(90deg);`;
+  else if (side === 'bottom')
+    css += `top:0;left:${x0}px;width:${x1-x0}px;height:${depth}px;transform-origin:50% 0%;transform:translateY(${y1}px) rotateX(-90deg);`;
+  d.style.cssText = css;
+  parent.appendChild(d);
+}
+
+const DEPTH = 34;
+const BX0 = LEFT*BLOCK, BX1 = (RIGHT+1)*BLOCK, BY1 = (BOT+1)*BLOCK;
+
+const hingeParts = [];
+function setHinge(v) { hingeParts.forEach(function(d) { d.style.visibility = v; }); }
+
+function buildSolids() {
+  makeEdge(rig, 'left',   BX0, 10*BLOCK, BX1, BY1-10, DEPTH, '#8f2018');
+  makeEdge(rig, 'right',  BX0, 10*BLOCK, BX1, BY1-10, DEPTH, '#5c150f');
+  makeEdge(rig, 'bottom', BX0+10, 0, BX1-10, BY1, DEPTH, '#4a1009');
+
+  makeEdge(lidHinge, 'left',   BX0, 36*BLOCK, BX1, BY1-10, DEPTH, '#8f2018');
+  makeEdge(lidHinge, 'right',  BX0, 24*BLOCK, BX1, BY1-10, DEPTH, '#5c150f');
+  makeEdge(lidHinge, 'bottom', BX0+10, 0, BX1-10, BY1, DEPTH, '#4a1009');
+
+  const n = 20, r = 25;
+  const w = 2 * r * Math.sin(Math.PI / n);
+  const ap = r * Math.cos(Math.PI / n);
+  const hTop = 22 * BLOCK, hLen = BY1 - hTop;
+  const hCx = BX1 - r + 2;
+  const zOff = 12;
+  const L1 = 40, L2 = 45;
+  for (let i = 0; i < n; i++) {
+    const ang = i * (360 / n);
+    const lit = Math.max(0, Math.cos((ang + 35) * Math.PI / 180));
+    const f = 0.16 + 0.84 * lit;
+    const col = `rgb(${Math.round(224*f)},${Math.round(80*f)},${Math.round(58*f)})`;
+    const dk = `rgb(${Math.round(224*f*0.32)},${Math.round(80*f*0.32)},${Math.round(58*f*0.32)})`;
+    const bg = `linear-gradient(to bottom, ${col} 0px, ${col} ${L1}px, ${dk} ${L1}px, ${dk} ${L2}px,`
+      + ` ${col} ${L2}px, ${col} ${hLen-L2}px, ${dk} ${hLen-L2}px, ${dk} ${hLen-L1}px, ${col} ${hLen-L1}px)`;
+    const d = document.createElement('div');
+    d.style.cssText = `position:absolute;top:${hTop}px;left:0;width:${w+0.8}px;height:${hLen}px;`
+      + `background:${bg};transform-origin:50% 50%;`
+      + `transform:translateX(${hCx - w/2}px) translateZ(${-zOff}px) rotateY(${ang}deg) translateZ(${ap}px);`;
+    rig.appendChild(d);
+    hingeParts.push(d);
+  }
+
+  [[hTop, '#7d1f16', 90], [hTop + hLen, '#280705', -90]].forEach(function(capDef) {
+    const cap = document.createElement('div');
+    cap.style.cssText = `position:absolute;top:0;left:0;width:${2*r}px;height:${2*r}px;`
+      + `border-radius:50%;background:${capDef[1]};transform-origin:50% 50%;`
+      + `transform:translateX(${hCx - r}px) translateY(${capDef[0] - r}px)`
+      + ` translateZ(${-zOff}px) rotateX(${capDef[2]}deg);`;
+    rig.appendChild(cap);
+    hingeParts.push(cap);
+  });
+}
+buildSolids();
+
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+const IDLE_SCALE = 0.5;
+const FINAL_SCALE = 0.74;
+const SPIN_MS = 1300, SETTLE_MS = 280, OPEN_MS = 800;
+const SCREEN_ON_MS = 560, FLASH_MS = 1250;
+const OPEN_ANGLE = 150;
+const SHIFT = -152;
+
+function rigT(s, extraY, shiftX) {
+  return `translateX(${shiftX}px) scale3d(${s},${s},${s}) rotateX(8deg) rotateY(${12 + extraY}deg)`;
+}
+
+let idleActive = false, idleRAF = null, idleStart = null;
+let nextShakeAt = 700 + Math.random() * 900, shaking = false;
+
+function idleFrame(ts) {
+  if (!idleActive) return;
+  if (!idleStart) idleStart = ts;
+  const e = ts - idleStart;
+  let bobY = Math.sin(e / 480) * 6;
+  let swayX = Math.sin(e / 700 + 0.6) * 4;
+  let rotZ = Math.sin(e / 620) * 1.5;
+  if (e >= nextShakeAt && e < nextShakeAt + 500) {
+    const p = (e - nextShakeAt) / 500;
+    const env = Math.sin(p * Math.PI);
+    bobY += -Math.sin(p * Math.PI) * 10;
+    swayX += Math.sin(p * 16) * 3.5 * env;
+    rotZ += Math.sin(p * 14) * 2.5 * env;
+    shaking = true;
+  } else if (shaking) {
+    shaking = false;
+    nextShakeAt = e + 1100 + Math.random() * 1200;
+  }
+  rigWrap.style.transform = `translate(${swayX}px, ${bobY}px) rotate(${rotZ}deg)`;
+  idleRAF = requestAnimationFrame(idleFrame);
+}
+
+function startIdle() {
+  idleActive = true; idleStart = null;
+  nextShakeAt = 700 + Math.random() * 900; shaking = false;
+  lidInnerEl.style.visibility = 'hidden';
+  setHinge('hidden');
+  renderBase(GRID_C, 0, null);
+  drawAtResolution(backCtx, backG, GRID_C);
+  drawAtResolution(lidOutCtx, lidOutG, GRID_C);
+  renderLidInner(GRID_C, 0);
+  rig.style.transform = rigT(IDLE_SCALE, 0, 0);
+  lidHinge.style.transform = 'rotateY(0deg)';
+  idleRAF = requestAnimationFrame(idleFrame);
+}
+function stopIdle() {
+  idleActive = false;
+  if (idleRAF) cancelAnimationFrame(idleRAF);
+  rigWrap.style.transform = 'none';
+}
+
+let spinStart = null;
+function animateSpin(ts) {
+  if (!spinStart) spinStart = ts;
+  const t = Math.min((ts - spinStart) / SPIN_MS, 1);
+  const e = easeOutCubic(t);
+  const N = 8 + e * (GRID_C - 8);
+  const s = IDLE_SCALE + e * (FINAL_SCALE - IDLE_SCALE);
+  rig.style.transform = rigT(s, (1 - e) * 1.2 * 360, e * SHIFT);
+  renderBase(N, 0, null);
+  drawAtResolution(backCtx, backG, N);
+  drawAtResolution(lidOutCtx, lidOutG, N);
+  if (t < 1) requestAnimationFrame(animateSpin);
+  else {
+    renderBase(GRID_C, 0, null);
+    drawAtResolution(backCtx, backG, GRID_C);
+    drawAtResolution(lidOutCtx, lidOutG, GRID_C);
+    renderLidInner(GRID_C, 0);
+    rig.style.transition = `transform ${SETTLE_MS}ms ease-out`;
+    rig.style.transform = rigT(FINAL_SCALE, 0, SHIFT);
+    setTimeout(startFlip, SETTLE_MS + 150);
+  }
+}
+
+let flipStart = null;
+function animateFlip(ts) {
+  if (!flipStart) flipStart = ts;
+  const t = Math.min((ts - flipStart) / OPEN_MS, 1);
+  lidHinge.style.transform = `rotateY(${OPEN_ANGLE * easeOutCubic(t)}deg)`;
+  if (t < 1) requestAnimationFrame(animateFlip);
+  else setTimeout(startScreenOn, 100);
+}
+function startFlip() {
+  flipStart = null;
+  lidInnerEl.style.visibility = 'visible';
+  setHinge('visible');
+  lidHinge.style.transition = 'none';
+  requestAnimationFrame(animateFlip);
+}
+
+let screenOnStart = null;
+function animateScreenOn(ts) {
+  if (!screenOnStart) screenOnStart = ts;
+  const t = Math.min((ts - screenOnStart) / SCREEN_ON_MS, 1);
+  const glows = [0, 1, 2].map(function(i) {
+    const st = 0.04 + i * 0.17, du = 0.26;
+    const q = (t - st) / du;
+    return (q < 0 || q > 1) ? 0 : Math.sin(q * Math.PI);
+  });
+  const screenW = Math.max(0, Math.min(1, (t - 0.04) / 0.80));
+  renderBase(GRID_C, screenW, glows);
+  renderLidInner(GRID_C, screenW);
+  if (t < 1) requestAnimationFrame(animateScreenOn);
+  else startFlash();
+}
+function startScreenOn() {
+  screenOnStart = null;
+  requestAnimationFrame(animateScreenOn);
+}
+
+function sizeFullFlash() {
+  fullFlash.width = window.innerWidth;
+  fullFlash.height = window.innerHeight;
+}
+
+const RAY_DIRS = [-82, -54, -28, -6, 18, 44, 74, 106, 139, 168, -158, -122]
+  .map(function(deg, n) {
+    const a = deg * Math.PI / 180;
+    return [Math.cos(a), Math.sin(a), 0.82 + 0.18 * ((n * 5) % 7) / 6];
+  });
+
+let flashStart = null, flashOx = 0, flashOy = 0, flashMaxR = 1, flashR0 = 0;
+function animateFlash(ts) {
+  if (!flashStart) flashStart = ts;
+  const t = Math.min((ts - flashStart) / FLASH_MS, 1);
+  const FW = fullFlash.width, FH = fullFlash.height;
+  const block = 20;
+  const c = Math.ceil(FW / block), r = Math.ceil(FH / block);
+  const core   = flashR0 * 0.35 + Math.pow(t, 3.2) * flashMaxR * 2.0;
+  const rayLen = flashR0 * 0.35 + t * flashMaxR * 2.4;
+  const spread = 0.030 + 0.55 * Math.pow(t, 3.6);
+  const W0 = block * 0.45;
+  flashCtx.clearRect(0, 0, FW, FH);
+  flashCtx.fillStyle = '#ffffff';
+  for (let j = 0; j < r; j++)
+    for (let i = 0; i < c; i++) {
+      const cx = i * block + block / 2, cy = j * block + block / 2;
+      const dx = cx - flashOx, dy = cy - flashOy;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      const jit = (((i * 13 + j * 7) % 5) - 2) * block * 0.15;
+      if (d + jit <= core) { flashCtx.fillRect(i * block, j * block, block, block); continue; }
+      for (let n = 0; n < RAY_DIRS.length; n++) {
+        const R = RAY_DIRS[n];
+        const pAlong = dx * R[0] + dy * R[1];
+        if (pAlong <= 0) continue;
+        const qPerp = Math.abs(-dx * R[1] + dy * R[0]);
+        if (qPerp <= W0 + pAlong * spread && pAlong + jit <= rayLen * R[2]) {
+          flashCtx.fillRect(i * block, j * block, block, block);
+          break;
+        }
+      }
+    }
+  if (t < 1) requestAnimationFrame(animateFlash);
+  else handoff();
+}
+function startFlash() {
+  sizeFullFlash();
+  const rect = document.getElementById('base').getBoundingClientRect();
+  flashOx = rect.left + rect.width * 0.469;
+  flashOy = rect.top + rect.height * 0.472;
+  flashR0 = Math.max(rect.width, rect.height) * 0.12;
+  const FW = fullFlash.width, FH = fullFlash.height;
+  flashMaxR = Math.max(
+    Math.sqrt(flashOx*flashOx + flashOy*flashOy),
+    Math.sqrt((FW-flashOx)*(FW-flashOx) + flashOy*flashOy),
+    Math.sqrt(flashOx*flashOx + (FH-flashOy)*(FH-flashOy)),
+    Math.sqrt((FW-flashOx)*(FW-flashOx) + (FH-flashOy)*(FH-flashOy))
+  );
+  fullFlash.style.opacity = 1;
+  flashStart = null;
+  requestAnimationFrame(animateFlash);
+}
+
+/* ----------------------------------------------------------------- handoff
+   The frame is solid white here, so the swap is invisible: drop the landing
+   scene, start the UI sliding up underneath, then dissolve the white away. */
+const FADE_DELAY = 140, FADE_MS = 700;
+function handoff() {
+  flashCtx.fillRect(0, 0, fullFlash.width, fullFlash.height);
+  stopIdle();
+  landingEl.classList.add('gone');
+  window.PORTFOLIO.enterUI();
+  setTimeout(function () {
+    fullFlash.style.transition = `opacity ${FADE_MS}ms ease`;
+    fullFlash.style.opacity = 0;
+  }, FADE_DELAY);
+  setTimeout(function () {
+    replayBtn.classList.add('visible');
+  }, FADE_DELAY + FADE_MS + 200);
+}
+
+function launchSequence() {
+  stopIdle();
+  rigWrap.style.transform = 'none';
+  titleWrap.style.transition = 'opacity 300ms ease';
+  titleWrap.style.opacity = 0;
+  rigWrap.style.pointerEvents = 'none';
+  spinStart = flipStart = screenOnStart = flashStart = null;
+  rig.style.transition = 'none';
+  lidHinge.style.transform = 'rotateY(0deg)';
+  requestAnimationFrame(animateSpin);
+}
+
+function resetAll() {
+  replayBtn.classList.remove('visible');
+  window.PORTFOLIO.resetUI();
+  landingEl.classList.remove('gone');
+  fullFlash.style.transition = 'none';
+  fullFlash.style.opacity = 0;
+  flashCtx.clearRect(0, 0, fullFlash.width, fullFlash.height);
+  titleWrap.style.transition = 'none';
+  titleWrap.style.opacity = 1;
+  rigWrap.style.pointerEvents = 'auto';
+  rig.style.transition = 'none';
+  lidHinge.style.transition = 'none';
+  startIdle();
+}
+
+rigWrap.addEventListener('click', launchSequence);
+replayBtn.addEventListener('click', resetAll);
+window.addEventListener('resize', sizeFullFlash);
+
+sizeFullFlash();
+resetAll();
+
+})();
+</script>
+</body>
+</html>
