@@ -6,12 +6,14 @@
 <title>Daniel Wang — Pokedex Portfolio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   /* ============================================================ foundation */
   :root {
-    --fd: 'Chakra Petch', 'Segoe UI', sans-serif;
-    --fb: 'IBM Plex Sans', system-ui, sans-serif;
+    /* A bitmap face for everything the device displays — screens and keycaps.
+       Silkscreen is the closest match on the one font host the page can use. */
+    --fd: 'Silkscreen', 'Courier New', monospace;
+    --fb: 'Silkscreen', 'Courier New', monospace;
     --fm: 'IBM Plex Mono', ui-monospace, monospace;
 
     /* Sampled off the reference render: a warm matte red under soft studio
@@ -35,7 +37,7 @@
 
   html, body {
     margin: 0; padding: 0; width: 100%; height: 100%;
-    background: #454545; overflow: hidden; font-family: var(--fb);
+    background: #000; overflow: hidden; font-family: var(--fb);
   }
 
   /* ============================================================ layer stack
@@ -46,7 +48,7 @@
      ====================================================================== */
   #uiLayer {
     position: fixed; inset: 0; z-index: 1;
-    background: radial-gradient(120% 90% at 50% 20%, #6a6a6a 0%, #525252 45%, #3b3b3b 100%);
+    background: radial-gradient(120% 90% at 50% 16%, #121212 0%, #070707 52%, #000 100%);
     opacity: 0; visibility: hidden; overflow: hidden;
   }
   #uiLayer.on { opacity: 1; visibility: visible; }
@@ -169,16 +171,17 @@
     background: radial-gradient(circle at 36% 30%, #7a1d14, #4a0f08 75%);
     box-shadow: inset 0 -1px 2px rgba(0,0,0,0.6);
   }
+  /* Light by default; the round black button inverts it. */
   .glass {
     flex: 1; min-height: 0; border-radius: 2px; position: relative; overflow: hidden;
-    background: linear-gradient(168deg, #4a4535 0%, var(--lcd) 36%, var(--lcd-deep) 100%);
-    box-shadow: inset 0 0 0 3px #7c7a71, inset 0 6px 16px rgba(0,0,0,0.5);
-    transition: background 220ms ease;
+    background: linear-gradient(168deg, #ffffff 0%, #f7f7f5 40%, #ececea 100%);
+    box-shadow: inset 0 0 0 3px #7c7a71, inset 0 5px 12px rgba(0,0,0,0.18);
+    transition: background 200ms ease;
   }
-  .glass.lit { background: linear-gradient(168deg, #5d5f33 0%, var(--lcd-lit) 40%, #2a2c16 100%); }
+  .glass.dark { background: linear-gradient(168deg, #1c1c1c 0%, #141414 40%, #0b0b0b 100%); }
   .glass::after {
     content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 3;
-    background: linear-gradient(124deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 38%, rgba(255,255,255,0) 52%);
+    background: linear-gradient(124deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 34%, rgba(255,255,255,0) 50%);
   }
   .foot { height: 46px; display: flex; align-items: center; padding-left: 30px; }
   .foot .dot {
@@ -193,23 +196,18 @@
   }
 
   /* ---------------------------------------------------------- left controls
-     Matches the reference's arrangement: black button with two dots beneath
-     it; the two pills with the green pad aligned exactly under their combined
-     width; the cross to the right; four dots centred along the bottom. */
-  .controls {
-    padding: 26px 34px 0;
-    display: flex; align-items: center; gap: 46px;
-  }
-  .ctl-left {
-    display: grid;
-    grid-template-columns: 60px max-content;
-    grid-template-rows: auto auto auto;
-    column-gap: 22px; row-gap: 14px;
-    align-items: center; justify-items: start;
+     Three bands: the mode button pinned left, the pill pair and green pad
+     centred as one stack in the space between, and the cross pinned right.
+     The pad is exactly as wide as the two pills plus their gap, so all three
+     share one left and right edge. */
+  .controls { padding: 26px 34px 0; display: flex; align-items: center; }
+  .ctl-a { flex: none; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .ctl-b {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 14px;
   }
   .pills { display: flex; gap: 12px; }
-  .dots2 { display: flex; gap: 10px; justify-self: center; }
-  .dots4 { display: flex; gap: 9px; justify-self: center; margin-top: 4px; }
+  .dots2 { display: flex; gap: 10px; }
+  .dots4 { display: flex; gap: 9px; justify-content: center; margin-top: 16px; }
   .dots2 i, .dots4 i {
     width: 9px; height: 9px; border-radius: 50%; display: block;
     background: #7f2015; box-shadow: inset 0 -1px 1px rgba(0,0,0,0.5);
@@ -297,17 +295,17 @@
         </div>
 
         <div class="controls">
-          <div class="ctl-left">
-            <button class="btn round black" data-act="light" title="Backlight"
-                    aria-label="Toggle backlight"></button>
+          <div class="ctl-a">
+            <button class="btn round black" id="modeBtn" data-act="light"
+                    title="Light / dark mode" aria-label="Switch to dark mode">DARK</button>
+            <div class="dots2"><i></i><i></i></div>
+          </div>
+          <div class="ctl-b">
             <div class="pills">
               <button class="btn pill red"  data-act="open" aria-label="Open selected key"></button>
               <button class="btn pill blue" data-act="home" aria-label="Back to index"></button>
             </div>
-            <div class="dots2"><i></i><i></i></div>
             <button class="btn greenpad" data-act="next" aria-label="Next section"></button>
-            <span></span>
-            <div class="dots4"><i></i><i></i><i></i><i></i></div>
           </div>
           <div class="dpad">
             <div class="dpad-plate">
@@ -321,6 +319,7 @@
             <button class="dz r" data-dir="right" aria-label="Cursor right"></button>
           </div>
         </div>
+        <div class="dots4"><i></i><i></i><i></i><i></i></div>
       </div>
 
       <div class="hinge"><i></i><i></i><i></i><i></i></div>
@@ -428,8 +427,9 @@ window.PORTFOLIO = {};
 
   /* -------------------------------------------------------------- variants */
   .btn.round.black {
-    width: 60px; height: 60px; border-radius: 50%; --lift: 4px;
+    width: 68px; height: 68px; border-radius: 50%; --lift: 4px;
     --face:#232325; --hi:#404044; --lo:#121214; --side:#08080a;
+    --label:#b9b9be; font-size: 11px; letter-spacing: 0.02em;
   }
   .btn.pill {
     width: 92px; height: 20px; border-radius: 999px; --lift: 3px;
@@ -460,12 +460,12 @@ window.PORTFOLIO = {};
   }
   .btn.sphere:active, .btn.sphere.press { transform: translateY(4px) scale(0.98); }
 
-  /* Sits exactly under the two pills: the grid column it lives in is sized
-     by the pill row, and the pad stretches to fill it. */
+  /* 92 + 12 + 92 — exactly the two pills and the gap between them, so the
+     stack shares one left and right edge. */
   .btn.greenpad {
-    justify-self: stretch; width: auto; height: 76px; border-radius: 3px; --lift: 4px;
+    width: 196px; height: 78px; border-radius: 3px; --lift: 4px;
     --face:#383d1c; --hi:#4d5327; --lo:#252912; --side:#161909; --label:#a4ad6c;
-    font-family: var(--fm); font-weight: 500; font-size: 22px; letter-spacing: 0.08em;
+    font-size: 20px; letter-spacing: 0.06em;
     align-items: center; justify-content: center;
   }
 
@@ -505,101 +505,121 @@ window.PORTFOLIO = {};
      One moulded cross on a pivot. Pressing an arm tips the whole plate toward
      it — the four hit zones are invisible and only pick the direction.
      ====================================================================== */
-  /* Skinnier arms (28% of the span), a small hub, and a shadow tight enough
-     that the cross reads as sitting ON the shell rather than hovering. */
-  .dpad { position: relative; width: 150px; height: 150px; perspective: 420px; flex: none; }
-  .dpad-plate {
-    position: absolute; inset: 0;
-    transition: transform 120ms cubic-bezier(.25,.85,.35,1);
-    clip-path: polygon(36% 0, 64% 0, 64% 36%, 100% 36%, 100% 64%,
-                       64% 64%, 64% 100%, 36% 100%, 36% 64%, 0 64%, 0 36%, 36% 36%);
-    background: linear-gradient(178deg, #343436 0%, #262628 45%, #1c1c1e 100%);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -3px 6px rgba(0,0,0,0.45);
-    filter: drop-shadow(0 2px 0 #111113) drop-shadow(0 3px 3px rgba(0,0,0,0.42));
+  /* Arms are 24% of the span. The cross sits in a cross-shaped well cut into
+     the shell, and its drop shadow is a hard 2px contact edge — a soft, far
+     shadow is what made it read as hovering. Tipping also swings a shading
+     gradient across the plate, so the pressed arm turns away from the light
+     instead of just changing shape. */
+  .dpad { position: relative; width: 150px; height: 150px; perspective: 380px; flex: none; }
+  .dpad::before {
+    content: ""; position: absolute; inset: -6px; z-index: 0;
+    clip-path: polygon(38% 0, 62% 0, 62% 38%, 100% 38%, 100% 62%,
+                       62% 62%, 62% 100%, 38% 100%, 38% 62%, 0 62%, 0 38%, 38% 38%);
+    background: #5c1c12;
+    box-shadow: inset 0 3px 5px rgba(0,0,0,0.75);
   }
-  .dpad-plate.up    { transform: rotateX(14deg)  translateY(1px); }
-  .dpad-plate.down  { transform: rotateX(-14deg) translateY(-1px); }
-  .dpad-plate.left  { transform: rotateY(-14deg) translateX(1px); }
-  .dpad-plate.right { transform: rotateY(14deg)  translateX(-1px); }
+  .dpad-plate {
+    position: absolute; inset: 0; z-index: 1;
+    transition: transform 110ms cubic-bezier(.25,.85,.35,1);
+    clip-path: polygon(38% 0, 62% 0, 62% 38%, 100% 38%, 100% 62%,
+                       62% 62%, 62% 100%, 38% 100%, 38% 62%, 0 62%, 0 38%, 38% 38%);
+    background: linear-gradient(178deg, #313133 0%, #242426 46%, #191919 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -3px 5px rgba(0,0,0,0.45);
+    filter: drop-shadow(0 2px 0 #0d0d0f);
+  }
+  .dpad-plate::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 100%);
+    transition: background 110ms ease;
+  }
+  .dpad-plate.up    { transform: rotateX(12deg); }
+  .dpad-plate.down  { transform: rotateX(-12deg); }
+  .dpad-plate.left  { transform: rotateY(-12deg); }
+  .dpad-plate.right { transform: rotateY(12deg); }
+  .dpad-plate.up::after    { background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 50%); }
+  .dpad-plate.down::after  { background: linear-gradient(0deg,   rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 50%); }
+  .dpad-plate.left::after  { background: linear-gradient(90deg,  rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 50%); }
+  .dpad-plate.right::after { background: linear-gradient(270deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 50%); }
 
-  .dpad .ar { position: absolute; color: #66666d; font-size: 11px; line-height: 1; }
-  .dpad .ar.u { top: 8px;    left: 50%; transform: translateX(-50%); }
-  .dpad .ar.d { bottom: 8px; left: 50%; transform: translateX(-50%); }
-  .dpad .ar.l { left: 8px;   top: 50%;  transform: translateY(-50%); }
-  .dpad .ar.r { right: 8px;  top: 50%;  transform: translateY(-50%); }
+  .dpad .ar { position: absolute; color: #5e5e64; font-size: 9px; line-height: 1; z-index: 1; }
+  .dpad .ar.u { top: 7px;    left: 50%; transform: translateX(-50%); }
+  .dpad .ar.d { bottom: 7px; left: 50%; transform: translateX(-50%); }
+  .dpad .ar.l { left: 7px;   top: 50%;  transform: translateY(-50%); }
+  .dpad .ar.r { right: 7px;  top: 50%;  transform: translateY(-50%); }
   .dpad .hub {
-    position: absolute; left: 50%; top: 50%; width: 22px; height: 22px;
+    position: absolute; left: 50%; top: 50%; width: 18px; height: 18px;
     transform: translate(-50%, -50%); border-radius: 50%;
-    background: radial-gradient(circle at 38% 32%, #3c3c40, #17171a 74%);
+    background: radial-gradient(circle at 38% 32%, #38383c, #151517 74%);
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.75);
   }
   .dpad .dz {
     position: absolute; appearance: none; background: transparent; border: 0;
-    padding: 0; cursor: pointer; z-index: 2;
+    padding: 0; cursor: pointer; z-index: 3;
   }
   .dpad .dz:focus-visible { outline: 3px solid var(--amber); outline-offset: -4px; border-radius: 4px; }
-  .dpad .dz.u { left: 36%; top: 0;    width: 28%; height: 40%; }
-  .dpad .dz.d { left: 36%; bottom: 0; width: 28%; height: 40%; }
-  .dpad .dz.l { top: 36%;  left: 0;   height: 28%; width: 40%; }
-  .dpad .dz.r { top: 36%;  right: 0;  height: 28%; width: 40%; }
+  .dpad .dz.u { left: 38%; top: 0;    width: 24%; height: 42%; }
+  .dpad .dz.d { left: 38%; bottom: 0; width: 24%; height: 42%; }
+  .dpad .dz.l { top: 38%;  left: 0;   height: 24%; width: 42%; }
+  .dpad .dz.r { top: 38%;  right: 0;  height: 24%; width: 42%; }
 
   /* ============================================================== screens */
+  /* Everything the screens display is set in the bitmap face. Sizes are kept
+     to whole pixels so the glyph grid stays crisp. */
   #screenMain {
     position: absolute; inset: 0; z-index: 2;
     overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
-    padding: 22px 26px 26px;
-    color: #cfe0b4; font-family: var(--fb); font-size: 15px; line-height: 1.6;
+    padding: 20px 24px 24px;
+    color: #1f1f1f; font-family: var(--fb); font-size: 12px; line-height: 1.85;
+    transition: color 200ms ease;
   }
   #screenMain::-webkit-scrollbar { display: none; }
-  .glass.lit #screenMain { color: #e8f7c9; }
+  .glass.dark #screenMain { color: #e4e4e4; }
 
   .eyebrow {
     display: flex; justify-content: space-between; gap: 16px;
-    font-family: var(--fm); font-size: 10.5px; letter-spacing: 0.18em;
-    color: #8b9a6c; text-transform: uppercase;
-    border-bottom: 1px solid rgba(170,190,130,0.26);
-    padding-bottom: 9px; margin-bottom: 16px;
+    font-size: 10px; color: #6e6e6e;
+    border-bottom: 2px solid rgba(0,0,0,0.18);
+    padding-bottom: 8px; margin-bottom: 16px;
   }
-  .lead {
-    font-family: var(--fd); font-weight: 700; font-size: 25px; line-height: 1.16;
-    color: #f2f8dd; margin: 0 0 7px;
-  }
-  .sublead { color: #a8b98a; margin: 0 0 16px; font-size: 14.5px; }
+  .lead { font-weight: 700; font-size: 18px; line-height: 1.3; color: #111; margin: 0 0 8px; }
+  .sublead { color: #565656; margin: 0 0 16px; font-size: 12px; }
 
   .blk { margin-bottom: 20px; }
   .blk:last-child { margin-bottom: 0; }
-  .blk h3 { font-family: var(--fd); font-weight: 600; font-size: 17px; margin: 0 0 3px; color: #eef7d9; }
-  .blk .role { margin: 0; font-size: 14.5px; color: #d3e4b8; }
-  .blk .when {
-    font-family: var(--fm); font-size: 11px; letter-spacing: 0.09em;
-    color: #8b9a6c; margin: 5px 0 9px;
-  }
+  .blk h3 { font-weight: 700; font-size: 14px; margin: 0 0 4px; color: #111; line-height: 1.35; }
+  .blk .role { margin: 0; font-size: 12px; color: #2e2e2e; }
+  .blk .when { font-size: 10px; color: #6e6e6e; margin: 6px 0 9px; }
   .bul { list-style: none; margin: 0; padding: 0; }
-  .bul li { position: relative; padding-left: 17px; margin-bottom: 7px; font-size: 14px; }
+  .bul li { position: relative; padding-left: 16px; margin-bottom: 7px; font-size: 11px; }
   .bul li::before {
     content: ""; position: absolute; left: 0; top: 8px;
-    width: 6px; height: 6px; background: #7d9455;
+    width: 6px; height: 6px; background: #7a7a7a;
   }
   .rows { display: grid; gap: 12px; margin: 0; }
-  .rows div { display: grid; grid-template-columns: 124px minmax(0,1fr); gap: 14px; }
-  .rows dt {
-    font-family: var(--fm); font-size: 10.5px; letter-spacing: 0.14em;
-    color: #8b9a6c; padding-top: 4px; text-transform: uppercase;
-  }
-  .rows dd { margin: 0; font-size: 14.5px; }
-  #screenMain a { color: #b7e86a; text-decoration: none; border-bottom: 1px solid rgba(183,232,106,0.45); }
-  #screenMain a:hover { border-bottom-color: #b7e86a; }
+  .rows div { display: grid; grid-template-columns: 122px minmax(0,1fr); gap: 14px; }
+  .rows dt { font-size: 10px; color: #6e6e6e; padding-top: 3px; }
+  .rows dd { margin: 0; font-size: 12px; }
+  #screenMain a { color: #1751a8; text-decoration: none; border-bottom: 2px solid rgba(23,81,168,0.4); }
+  #screenMain a:hover { border-bottom-color: #1751a8; }
   .note {
-    font-size: 13.5px; color: #9aac7c;
-    border-top: 1px solid rgba(170,190,130,0.26); margin-top: 18px; padding-top: 12px;
+    font-size: 11px; color: #6e6e6e;
+    border-top: 2px solid rgba(0,0,0,0.18); margin-top: 18px; padding-top: 12px;
   }
 
-  #screenSide .who { font-family: var(--fd); font-weight: 700; font-size: 22px; color: #edf6d8; }
-  #screenSide .what { font-size: 13.5px; color: #9bad7f; }
-  #screenSide .where {
-    font-family: var(--fm); font-size: 11.5px; letter-spacing: 0.13em;
-    color: #9ad45f; text-transform: uppercase;
-  }
+  /* dark mode: the same page, inverted */
+  .glass.dark .lead, .glass.dark .blk h3 { color: #fff; }
+  .glass.dark .sublead { color: #a8a8a8; }
+  .glass.dark .blk .role { color: #d4d4d4; }
+  .glass.dark .eyebrow, .glass.dark .blk .when,
+  .glass.dark .rows dt, .glass.dark .note { color: #969696; }
+  .glass.dark .eyebrow { border-bottom-color: rgba(255,255,255,0.22); }
+  .glass.dark .note { border-top-color: rgba(255,255,255,0.22); }
+  .glass.dark .bul li::before { background: #8a8a8a; }
+  .glass.dark #screenMain a { color: #76b4ff; border-bottom-color: rgba(118,180,255,0.4); }
+
+  #screenSide .who { font-weight: 700; font-size: 16px; color: #f0f0f0; letter-spacing: 0.02em; }
+  #screenSide .what { font-size: 11px; color: #9a9a9a; }
+  #screenSide .where { font-size: 10px; color: #7fd06a; }
   #screenSide .where.link { color: var(--amber); }
 
   /* -------------------------------------------------- plain-text fallback */
@@ -855,7 +875,15 @@ function activate() {
 }
 
 const scrollPage = f => main.scrollBy({ top: main.clientHeight * f, behavior: 'smooth' });
-const toggleLit  = () => glass.classList.toggle('lit');
+
+// The round black button inverts the screen. Its own cap says which mode it
+// will switch you to, which is the way a physical labelled switch reads.
+const modeBtn = $('#modeBtn');
+function toggleLit() {
+  const dark = glass.classList.toggle('dark');
+  modeBtn.textContent = dark ? 'LIGHT' : 'DARK';
+  modeBtn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
 
 function fire(el) {
   if (!el) return;
