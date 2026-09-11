@@ -394,8 +394,10 @@ function drawLeft(ox) {
 // ---------- right panel ----------
 // The right half keeps its footprint but every feature on it shrinks — that's
 // where the main screen's extra rows and columns come from.
-const KEYS = [['HOME', 'ABOUT', 'WORK', 'SKILLS', 'CONTACT'],
-              ['RESUME', 'GITHUB', 'BLOG', 'GALLERY', 'MORE']];
+// Seven section keys and three that leave the site. Seven characters is the
+// ceiling — an eighth overruns the key face.
+const KEYS = [['HOME', 'ABOUT', 'WORK', 'TEAMS', 'PROJECT'],
+              ['SKILLS', 'CONTACT', 'RESUME', 'GITHUB', 'SOURCE']];
 const KEY_X = 8, KEY_Y = 60, KEY_W = 12.4, KEY_H = 7.6;
 
 function drawRight(ox) {
@@ -1300,6 +1302,517 @@ window.addEventListener('resize', sizeFullFlash);
 
 sizeFullFlash();
 resetAll();
+
+})();
+</script>
+
+<!-- =====================================================================
+     SCENE 3 — content
+     Real DOM positioned over the canvas via DEX_UI.rect(), so everything
+     here stays selectable, crawlable text rather than baked pixels.
+     ===================================================================== -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Silkscreen:wght@400;700&display=swap">
+<style>
+  :root {
+    --fd: 'Silkscreen', 'Courier New', monospace;
+    --fb: 'Pixelify Sans', 'Trebuchet MS', sans-serif;
+    --ink: #14171b;
+    --ink-dim: #4a5058;
+    --rule: #7f858d;
+  }
+
+  #dexLayer {
+    position: fixed; inset: 0; z-index: 5;
+    pointer-events: none;
+    opacity: 0; transition: opacity 340ms ease;
+  }
+  #dexLayer.on { opacity: 1; }
+
+  #screenMain, #screenSide, .hit {
+    position: fixed;
+    pointer-events: auto;
+  }
+
+  /* ---------------------------------------------------------- main screen */
+  #screenMain {
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    color: var(--ink);
+    font-family: var(--fb);
+    line-height: 1.5;
+  }
+  #screenMain::-webkit-scrollbar { display: none; }
+
+  #screenMain .pad { padding: 1.1em 1.3em 1.6em; }
+
+  .eyebrow {
+    font-family: var(--fd);
+    font-size: 0.62em;
+    letter-spacing: 0.14em;
+    color: var(--ink-dim);
+    display: flex;
+    justify-content: space-between;
+    gap: 1em;
+    border-bottom: 2px solid var(--rule);
+    padding-bottom: 0.5em;
+    margin-bottom: 0.9em;
+  }
+
+  .lead {
+    font-family: var(--fd);
+    font-size: 1.15em;
+    line-height: 1.3;
+    margin: 0 0 0.35em;
+  }
+  .sublead {
+    font-size: 0.95em;
+    color: var(--ink-dim);
+    margin: 0 0 1em;
+  }
+
+  .blk { margin-bottom: 1.2em; }
+  .blk:last-child { margin-bottom: 0; }
+  .blk h3 {
+    font-family: var(--fd);
+    font-size: 0.86em;
+    line-height: 1.35;
+    margin: 0 0 0.2em;
+  }
+  .blk .role { font-size: 0.95em; margin: 0; }
+  .blk .when {
+    font-family: var(--fd);
+    font-size: 0.58em;
+    letter-spacing: 0.1em;
+    color: var(--ink-dim);
+    margin: 0.25em 0 0.55em;
+  }
+
+  .bul { list-style: none; margin: 0; padding: 0; }
+  .bul li {
+    position: relative;
+    padding-left: 1.1em;
+    margin-bottom: 0.4em;
+    font-size: 0.92em;
+  }
+  .bul li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0.55em;
+    width: 0.34em; height: 0.34em;
+    background: var(--ink-dim);
+  }
+
+  .rows { display: grid; gap: 0.6em; margin: 0; }
+  .rows div { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 0.8em; }
+  .rows dt {
+    font-family: var(--fd);
+    font-size: 0.58em;
+    letter-spacing: 0.1em;
+    color: var(--ink-dim);
+    padding-top: 0.35em;
+  }
+  .rows dd { margin: 0; font-size: 0.95em; }
+
+  #screenMain a {
+    color: #123a63;
+    text-decoration: none;
+    border-bottom: 2px solid #6d90b4;
+  }
+  #screenMain a:hover { border-bottom-color: #123a63; }
+
+  .note {
+    font-size: 0.86em;
+    color: var(--ink-dim);
+    border-top: 2px solid var(--rule);
+    margin-top: 1.1em;
+    padding-top: 0.7em;
+  }
+
+  /* ---------------------------------------------------------- side screen */
+  #screenSide {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.35em;
+    padding: 0 1.1em;
+    color: #cfe3c6;
+    font-family: var(--fb);
+    overflow: hidden;
+  }
+  #screenSide .who { font-family: var(--fd); font-size: 1.05em; color: #eaf6e4; }
+  #screenSide .what { font-size: 0.92em; color: #9fb89a; }
+  #screenSide .where {
+    font-family: var(--fd);
+    font-size: 0.62em;
+    letter-spacing: 0.12em;
+    color: #7fd06a;
+  }
+
+  /* -------------------------------------------------------- hit overlays */
+  .hit {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .hit:hover { background: rgba(255, 255, 255, 0.22); }
+  .hit:active { background: rgba(0, 0, 0, 0.18); }
+  .hit[aria-current="true"] {
+    background: rgba(255, 255, 255, 0.30);
+    box-shadow: inset 0 0 0 3px #ffffff;
+  }
+  .hit:focus-visible { outline: 3px solid #ffd23f; outline-offset: 1px; }
+
+  /* -------------------------------------------------- plain-text fallback */
+  #hatch {
+    position: fixed;
+    left: 22px; bottom: 22px;
+    z-index: 15;
+    font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.9;
+    color: #6d6d78;
+  }
+  #hatch b { color: #b9b9c6; font-weight: 600; }
+  #hatch a { color: #b9b9c6; text-decoration: none; border-bottom: 1px solid #45454f; }
+  #hatch a:hover { color: #fff; border-bottom-color: #fff; }
+  #hatch .sep { color: #45454f; margin: 0 6px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    #dexLayer { transition: none; }
+  }
+  @media (max-width: 760px) {
+    #hatch { font-size: 11px; left: 14px; bottom: 14px; }
+  }
+</style>
+
+<div id="dexLayer">
+  <section id="screenMain" tabindex="0" aria-label="Dex entry"></section>
+  <aside id="screenSide" aria-hidden="true"></aside>
+  <nav id="hits" aria-label="Dex navigation"></nav>
+</div>
+
+<footer id="hatch">
+  <b>Daniel Wang</b><span class="sep">/</span>Computer Engineering, UBC 2028<br>
+  <a href="./Daniel_Wang_Resume.pdf">Resume</a><span class="sep">·</span><a
+     href="https://github.com/deewang">GitHub</a><span class="sep">·</span><a
+     href="https://linkedin.com/in/daniel-wang77">LinkedIn</a><span class="sep">·</span><a
+     href="mailto:daniel.yuewang@gmail.com">daniel.yuewang@gmail.com</a>
+</footer>
+
+<script>
+(function () {
+
+// ------------------------------------------------------------------ content
+// Straight from the resume. Edit here; nothing else needs to change.
+const SECTIONS = {
+  HOME: {
+    no: 1, kind: 'INDEX',
+    lead: 'DANIEL WANG',
+    sublead: 'Computer Engineering at UBC, class of 2028. Embedded firmware that has to survive a race car, and web apps that have to survive a demo.',
+    rows: [
+      ['CURRENTLY', 'RF Software Developer Co-op at NETGEAR'],
+      ['TEAM', 'Formula Racing SAE — Electrical Subteam'],
+      ['BASED', 'Vancouver, BC']
+    ],
+    note: 'Use the keys on the right, the D-pad, or your arrow keys. Left and right change section; up and down scroll.'
+  },
+
+  ABOUT: {
+    no: 2, kind: 'EDUCATION',
+    lead: 'UNIVERSITY OF BRITISH COLUMBIA',
+    sublead: 'Bachelor of Applied Science — Computer Engineering',
+    rows: [
+      ['GRADUATES', '2028'],
+      ['HONOURS', 'Dean’s List, 2024–2025'],
+      ['FOCUS', 'Embedded systems, test automation, full-stack web']
+    ]
+  },
+
+  WORK: {
+    no: 3, kind: 'WORK EXPERIENCE',
+    blocks: [
+      {
+        title: 'NETGEAR',
+        role: 'RF Software Developer Co-op',
+        when: 'Richmond, BC · May 2026 – Aug 2026',
+        bullets: [
+          'Owned migration of 16 automated LTE Python test scripts from the legacy R&S CMW500 to the newer CMX500 test instrument, building adapter functions and SCPI command mappings for instrument configuration and measurement.',
+          'Compared runtimes for RF tests across both platforms, finding the CMX500 up to 2× slower. Fixed redundant reattachment cycles during channel switching and a UI-write bottleneck via non-blocking execution.',
+          'Ran test scripts to validate results against 3GPP spec, tracking bugs in Jira.',
+          'Maintained and released three internal tools for the RF team — automated test environment, automated calibration unit, and automated report generator — and added a Microsoft Teams webhook for remote test pass/fail updates.'
+        ]
+      },
+      {
+        title: 'Vancouver Universal Medical Ltd.',
+        role: 'Web Developer Intern',
+        when: 'Richmond, BC · July 2025 – Aug 2025',
+        bullets: [
+          'Built and maintained the company website in WordPress for client bookings and business information.',
+          'Wrote a Python script to pull online appointments into a Google Sheets contact list and Google Calendar for scheduling.',
+          'Automated client appointment reminders through iMessage, using appointment data pulled via the Google Calendar API.'
+        ]
+      }
+    ]
+  },
+
+  TEAMS: {
+    no: 4, kind: 'STUDENT DESIGN TEAMS',
+    lead: 'FORMULA RACING SAE',
+    sublead: 'Electrical Subteam Member — University of British Columbia, Sept 2024 to present.',
+    blocks: [
+      {
+        title: 'Strain Gauge Data Acquisition Board',
+        when: 'STM32 · CAN @ 100 Hz · C / Python',
+        bullets: [
+          'Streamed real-time a-arm load data via CAN bus at 100 Hz on STM32, synchronized with vehicle AIM accelerometer data, using ADC with DMA and STM32 HAL drivers for digital filtering.',
+          'Flashed and debugged firmware via ST-Link, validating ADC readings and signal integrity.',
+          'Soldered strain gauge amplifier and CIU PCBs. Validated output and voltage rails using oscilloscope and multimeter.',
+          'Built a Python pipeline to calibrate and convert voltage to wheel forces, and plotted strain gauge against accelerometer data.',
+          'Built the wiring harness connecting the CIU to the car’s electrical system to collect suspension load data on test days.'
+        ]
+      },
+      {
+        title: 'Vehicle System Validation Board (VSVB)',
+        when: 'Benchtop debugger · CAN · USB',
+        bullets: [
+          'Designed a benchtop debugger to power ECUs and modules for testing drive-by-wire, PDM, and dash off the car.',
+          'Built programmable potentiometers, digital waveforms, and variable-reluctance waveforms to simulate analog and digital sensors and reluctors for crank/RPM.',
+          'Implemented CAN message reading/writing and a USB software test environment for test case development.'
+        ]
+      }
+    ]
+  },
+
+  PROJECT: {
+    no: 5, kind: 'PROJECTS',
+    lead: 'DR. POCKET',
+    sublead: 'Best Presentation Award — IEEE Engineering Design Team Competition 2026.',
+    blocks: [
+      {
+        title: 'drpocket.org',
+        when: 'React · Three.js · PostgreSQL · Firebase · Vercel',
+        href: 'https://drpocket.org/',
+        bullets: [
+          'Built a React frontend with an interactive 3D body model (Three.js) for symptom selection, plus chat and history panels.',
+          'Built a serverless API endpoint using Vercel Functions that combines user symptom data, 3D model selections, and medical history to call the Anthropic API, returning AI-generated health responses.',
+          'Designed a PostgreSQL database and wrote SQL queries to store and retrieve medical history and session data.',
+          'Implemented Firebase Authentication to manage secure user login and signup for persistent accounts across sessions.'
+        ]
+      }
+    ]
+  },
+
+  SKILLS: {
+    no: 6, kind: 'SKILLS',
+    rows: [
+      ['LANGUAGES', 'Python, Java, JavaScript, C, C++, Verilog, MATLAB'],
+      ['DATA & TOOLS', 'React, Pytest, Git, Jira, Agile, PostgreSQL, MySQL, Firestore'],
+      ['EMBEDDED', 'STM32, RTOS, ADC, DMA, CAN Bus, UART']
+    ]
+  },
+
+  CONTACT: {
+    no: 7, kind: 'CONTACT',
+    lead: 'GET IN TOUCH',
+    sublead: 'Open to Summer 2027 co-op and internship roles.',
+    rows: [
+      ['EMAIL', '<a href="mailto:daniel.yuewang@gmail.com">daniel.yuewang@gmail.com</a>'],
+      ['LINKEDIN', '<a href="https://linkedin.com/in/daniel-wang77">daniel-wang77</a>'],
+      ['GITHUB', '<a href="https://github.com/deewang">deewang</a>'],
+      ['SITE', '<a href="https://deewang.github.io/">deewang.github.io</a>']
+    ],
+    note: 'Phone number is on the resume PDF rather than here, to keep it off a public page.'
+  }
+};
+
+const ORDER = ['HOME', 'ABOUT', 'WORK', 'TEAMS', 'PROJECT', 'SKILLS', 'CONTACT'];
+
+const LINKS = {
+  RESUME: './Daniel_Wang_Resume.pdf',
+  GITHUB: 'https://github.com/deewang',
+  SOURCE: 'https://github.com/deewang/deewang.github.io'
+};
+
+// ------------------------------------------------------------------ render
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const pad = n => String(n).padStart(3, '0');
+
+const layer = document.getElementById('dexLayer');
+const main  = document.getElementById('screenMain');
+const side  = document.getElementById('screenSide');
+const hits  = document.getElementById('hits');
+
+let active = 'HOME';
+
+function renderMain() {
+  const s = SECTIONS[active];
+  let html = '<div class="pad">';
+  html += '<div class="eyebrow"><span>Nº ' + pad(s.no) + '</span><span>' + esc(s.kind) + '</span></div>';
+  if (s.lead)    html += '<p class="lead">' + esc(s.lead) + '</p>';
+  if (s.sublead) html += '<p class="sublead">' + esc(s.sublead) + '</p>';
+
+  if (s.rows) {
+    html += '<dl class="rows">';
+    s.rows.forEach(function (r) {
+      // Row values may carry anchors on purpose, so they are not escaped.
+      html += '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>';
+    });
+    html += '</dl>';
+  }
+
+  if (s.blocks) {
+    s.blocks.forEach(function (b) {
+      html += '<div class="blk">';
+      html += '<h3>' + (b.href
+        ? '<a href="' + esc(b.href) + '" target="_blank" rel="noopener">' + esc(b.title) + ' ↗</a>'
+        : esc(b.title)) + '</h3>';
+      if (b.role) html += '<p class="role">' + esc(b.role) + '</p>';
+      if (b.when) html += '<p class="when">' + esc(b.when) + '</p>';
+      html += '<ul class="bul">' + b.bullets.map(l => '<li>' + esc(l) + '</li>').join('') + '</ul>';
+      html += '</div>';
+    });
+  }
+
+  if (s.note) html += '<p class="note">' + esc(s.note) + '</p>';
+  html += '</div>';
+  main.innerHTML = html;
+  main.scrollTop = 0;
+}
+
+function renderSide() {
+  const s = SECTIONS[active];
+  side.innerHTML =
+    '<div class="who">DANIEL WANG</div>' +
+    '<div class="what">Computer Engineering · UBC 2028</div>' +
+    '<div class="where">▸ ' + esc(s.kind) + '</div>';
+}
+
+function markKeys() {
+  [...hits.querySelectorAll('[data-key]')].forEach(function (b) {
+    b.setAttribute('aria-current', String(b.dataset.key === active));
+  });
+}
+
+function show(name) {
+  if (!SECTIONS[name]) return;
+  active = name;
+  renderMain();
+  renderSide();
+  markKeys();
+}
+
+function stepSection(d) {
+  const i = ORDER.indexOf(active);
+  show(ORDER[(i + d + ORDER.length) % ORDER.length]);
+}
+
+// ------------------------------------------------------------- hit targets
+function makeHits() {
+  hits.innerHTML = '';
+  DEX_UI.keys.flat().forEach(function (label) {
+    const el = document.createElement(LINKS[label] ? 'a' : 'button');
+    el.className = 'hit';
+    el.dataset.region = 'key:' + label;
+    const pretty = label.charAt(0) + label.slice(1).toLowerCase();
+    if (LINKS[label]) {
+      el.href = LINKS[label];
+      if (/^https?:/.test(LINKS[label])) { el.target = '_blank'; el.rel = 'noopener'; }
+      el.setAttribute('aria-label', pretty);
+    } else {
+      el.type = 'button';
+      el.dataset.key = label;
+      el.setAttribute('aria-label', pretty);
+      el.addEventListener('click', () => show(label));
+    }
+    hits.appendChild(el);
+  });
+
+  const DPAD = {
+    'dpad:up':    () => main.scrollBy({ top: -main.clientHeight * 0.6, behavior: 'smooth' }),
+    'dpad:down':  () => main.scrollBy({ top:  main.clientHeight * 0.6, behavior: 'smooth' }),
+    'dpad:left':  () => stepSection(-1),
+    'dpad:right': () => stepSection(1)
+  };
+  Object.keys(DPAD).forEach(function (region) {
+    const b = document.createElement('button');
+    b.className = 'hit';
+    b.type = 'button';
+    b.dataset.region = region;
+    b.setAttribute('aria-label', region.replace('dpad:', 'D-pad '));
+    b.addEventListener('click', DPAD[region]);
+    hits.appendChild(b);
+  });
+}
+
+// ------------------------------------------------------------------ layout
+function place() {
+  const r0 = DEX_UI.rect('screen:left');
+  if (!r0) return;
+  const unit = r0.width / DEX_UI.regions['screen:left'].w;   // px per artwork unit
+
+  [[main, 'screen:left'], [side, 'screen:right']].forEach(function (pair) {
+    const r = DEX_UI.rect(pair[1]);
+    pair[0].style.left = r.left + 'px';
+    pair[0].style.top = r.top + 'px';
+    pair[0].style.width = r.width + 'px';
+    pair[0].style.height = r.height + 'px';
+  });
+
+  main.style.fontSize = (unit * 1.52) + 'px';
+  side.style.fontSize = (unit * 1.62) + 'px';
+
+  [...hits.children].forEach(function (el) {
+    const r = DEX_UI.rect(el.dataset.region);
+    if (!r) return;
+    el.style.left = r.left + 'px';
+    el.style.top = r.top + 'px';
+    el.style.width = r.width + 'px';
+    el.style.height = r.height + 'px';
+  });
+}
+
+DEX_UI.onLayout = place;
+
+// -------------------------------------------------- reveal after the slide
+// The canvas animates its own transform during the slide, so the overlay
+// stays hidden until the device has settled at its resting position.
+const SETTLE_AFTER = 1120;
+let revealTimer = null;
+
+const enter = PORTFOLIO.enterUI;
+PORTFOLIO.enterUI = function () {
+  enter();
+  clearTimeout(revealTimer);
+  revealTimer = setTimeout(function () {
+    place();
+    layer.classList.add('on');
+  }, SETTLE_AFTER);
+};
+
+const reset = PORTFOLIO.resetUI;
+PORTFOLIO.resetUI = function () {
+  clearTimeout(revealTimer);
+  layer.classList.remove('on');
+  reset();
+};
+
+// ---------------------------------------------------------------- keyboard
+document.addEventListener('keydown', function (ev) {
+  if (!layer.classList.contains('on')) return;
+  if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName)) return;
+  if (ev.key === 'ArrowLeft')  { ev.preventDefault(); stepSection(-1); }
+  if (ev.key === 'ArrowRight') { ev.preventDefault(); stepSection(1); }
+  if (ev.key === 'ArrowUp')    { ev.preventDefault(); main.scrollBy({ top: -90, behavior: 'smooth' }); }
+  if (ev.key === 'ArrowDown')  { ev.preventDefault(); main.scrollBy({ top:  90, behavior: 'smooth' }); }
+});
+
+makeHits();
+show('HOME');
+place();
 
 })();
 </script>
