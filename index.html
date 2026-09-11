@@ -170,7 +170,10 @@ const P = {
   darkPad: '#414f2e',
   green: '#6ab04c', greenLight: '#8ecb6d',
   slate: '#4a4a54', slateDark: '#2c2c34',
-  maroon: '#8b2f26'
+  maroon: '#8b2f26',
+  // Recesses. Every pressable control is drawn as an empty socket here; the
+  // cap that fills it is a DOM element, so it can actually travel on press.
+  socket: '#191c21', socketCool: '#1b2730'
 };
 
 // ---------- grid primitives (unit coords, scaled by S) ----------
@@ -368,27 +371,26 @@ function drawLeft(ox) {
   circle(ox + 14, 89, 1.4, '#d0392c');
   for (let k = 0; k < 5; k++) set(ox + 55, 87.5 + k * 1.5, 15, 0.6, P.chromeDark);
 
-  // ---- controls, in the last 19 rows ----
+  // ---- controls: sockets only. Each cap is a DOM element sitting in its
+  // hole, so pressing one genuinely moves it down into the case. ----
   circle(ox + 9, 105, 3.4, P.outline);
-  circle(ox + 9, 105, 2.7, '#18181c');
+  circle(ox + 9, 105, 2.8, P.socket);
 
-  roundRect(ox + 15, 100.5, 12, 2.8, 1.4, P.outline);
-  roundRect(ox + 15.5, 101, 11, 1.8, 0.9, P.maroon);
-  roundRect(ox + 28.5, 100.5, 12, 2.8, 1.4, P.outline);
-  roundRect(ox + 29, 101, 11, 1.8, 0.9, '#4a9ed8');
+  roundRect(ox + 15, 100, 12, 3.4, 1.7, P.outline);
+  roundRect(ox + 15.4, 100.4, 11.2, 2.6, 1.3, P.socket);
+  roundRect(ox + 28.5, 100, 12, 3.4, 1.7, P.outline);
+  roundRect(ox + 28.9, 100.4, 11.2, 2.6, 1.3, P.socket);
 
   roundRect(ox + 15, 104.5, 30, 11, 1.2, P.outline);
-  roundRect(ox + 15.6, 105.1, 28.8, 9.8, 1.0, P.green);
-  roundRect(ox + 15.6, 105.1, 28.8, 1.2, 1.0, P.greenLight);
+  roundRect(ox + 15.5, 105, 29, 10, 1.0, P.socket);
 
-  // A clean plus. The arrow glyphs are gone: at this size they rendered as
-  // four blobs rather than four arrows.
+  // The d-pad is a plus-shaped well; its four arms each take their own cap.
   const dx = ox + DX;
   set(dx - 2.6, DY - 8.5, 5.2, 17, P.outline);
   set(dx - 8.5, DY - 2.6, 17, 5.2, P.outline);
-  set(dx - 2.0, DY - 7.9, 4.0, 15.8, P.slate);
-  set(dx - 7.9, DY - 2.0, 15.8, 4.0, P.slate);
-  circle(dx, DY, 1.3, P.slateDark);
+  set(dx - 2.1, DY - 8.0, 4.2, 16, P.socket);
+  set(dx - 8.0, DY - 2.1, 16, 4.2, P.socket);
+  circle(dx, DY, 1.5, P.slate);
 }
 
 // ---------- right panel ----------
@@ -407,34 +409,29 @@ function drawRight(ox) {
   set(ox + 8, 33, 62, 22, P.outline);
   set(ox + 9, 34, 60, 20, P.screen);
 
+  // Key wells. The labels moved to the DOM caps, where they stay selectable
+  // and ride down with the key when it is pressed.
   for (let r = 0; r < KEYS.length; r++)
     for (let c = 0; c < KEYS[r].length; c++) {
       const x = ox + KEY_X + c * KEY_W, y = KEY_Y + r * KEY_H;
-      set(x, y, KEY_W, KEY_H, P.blueDark);
-      set(x + 0.5, y + 0.5, KEY_W - 1, KEY_H - 1, P.blue);
-      const lab = KEYS[r][c];
-      const wCells = textW(lab, 1);
-      textCells(Math.round((x + KEY_W / 2) * S - wCells / 2),
-                Math.round((y + KEY_H / 2 - CROP) * S - 3.5), lab, 1, '#0d3550');
-      set(x + 0.5, y + KEY_H - 1.3, KEY_W - 1, 0.7, '#4a92bb');
+      set(x, y, KEY_W, KEY_H, P.outline);
+      set(x + 0.45, y + 0.45, KEY_W - 0.9, KEY_H - 0.9, P.socketCool);
     }
 
   set(ox + 44, 79, 10, 1.8, P.outline);
   set(ox + 56, 79, 10, 1.8, P.outline);
 
   set(ox + 8, 83, 22, 9.5, P.outline);
-  set(ox + 8.8, 83.8, 10.2, 7.9, P.chrome);
-  set(ox + 19.6, 83.8, 10.2, 7.9, P.chrome);
+  set(ox + 8.7, 83.7, 10.4, 8.1, P.socket);
+  set(ox + 19.5, 83.7, 10.4, 8.1, P.socket);
 
   circle(ox + 62, 87.5, 3.6, P.outline);
-  circle(ox + 62, 87.5, 2.9, P.yellowDark);
-  circle(ox + 61.8, 87.2, 2.3, P.yellow);
-  circle(ox + 61.0, 86.4, 1.1, '#f8e2a0');
+  circle(ox + 62, 87.5, 3.0, P.socket);
 
   set(ox + 8, 96, 28, 16, P.outline);
-  set(ox + 8.8, 96.8, 26.4, 14.4, P.darkPad);
+  set(ox + 8.7, 96.7, 26.6, 14.6, P.socket);
   set(ox + 40, 96, 28, 16, P.outline);
-  set(ox + 40.8, 96.8, 26.4, 14.4, P.darkPad);
+  set(ox + 40.7, 96.7, 26.6, 14.6, P.socket);
 }
 
 // ---------- hinge barrel ----------
@@ -524,11 +521,13 @@ ctx.putImageData(img, 0, 0);
 // position an HTML element on top of it.
 const REGIONS = {};
 (function buildRegions() {
+  // Regions describe the SOCKET, not the outer cell, so a DOM cap dropped on
+  // one lands inside the well rather than straddling its rim.
   for (let r = 0; r < KEYS.length; r++)
     for (let c = 0; c < KEYS[r].length; c++)
       REGIONS['key:' + KEYS[r][c]] =
-        { x: RX + KEY_X + c * KEY_W, y: KEY_Y + r * KEY_H,
-          w: KEY_W, h: KEY_H, label: KEYS[r][c] };
+        { x: RX + KEY_X + c * KEY_W + 0.45, y: KEY_Y + r * KEY_H + 0.45,
+          w: KEY_W - 0.9, h: KEY_H - 0.9, label: KEYS[r][c] };
 
   REGIONS['screen:left']   = { x: LX + 10.5, y: 38.5, w: 59, h: 44 };
   REGIONS['screen:right']  = { x: RX + 9,    y: 34,   w: 60, h: 20 };
@@ -538,16 +537,16 @@ const REGIONS = {};
   REGIONS['dpad:left']     = { x: LX + DX - 8.5, y: DY - 2.6, w: 5.9, h: 5.2 };
   REGIONS['dpad:right']    = { x: LX + DX + 2.6, y: DY - 2.6, w: 5.9, h: 5.2 };
 
-  REGIONS['btn:black']     = { x: LX + 5.6,  y: 101.6, w: 6.8,  h: 6.8 };
-  REGIONS['btn:red']       = { x: LX + 15,   y: 100.5, w: 12,   h: 2.8 };
-  REGIONS['btn:blue']      = { x: LX + 28.5, y: 100.5, w: 12,   h: 2.8 };
-  REGIONS['btn:gold']      = { x: RX + 58.4, y: 83.9,  w: 7.2,  h: 7.2 };
-  REGIONS['btn:white1']    = { x: RX + 8.8,  y: 83.8,  w: 10.2, h: 7.9 };
-  REGIONS['btn:white2']    = { x: RX + 19.6, y: 83.8,  w: 10.2, h: 7.9 };
+  REGIONS['btn:black']     = { x: LX + 6.2,  y: 102.2, w: 5.6,  h: 5.6 };
+  REGIONS['btn:red']       = { x: LX + 15.4, y: 100.4, w: 11.2, h: 2.6 };
+  REGIONS['btn:blue']      = { x: LX + 28.9, y: 100.4, w: 11.2, h: 2.6 };
+  REGIONS['btn:gold']      = { x: RX + 59,   y: 84.5,  w: 6,    h: 6 };
+  REGIONS['btn:white1']    = { x: RX + 8.7,  y: 83.7,  w: 10.4, h: 8.1 };
+  REGIONS['btn:white2']    = { x: RX + 19.5, y: 83.7,  w: 10.4, h: 8.1 };
 
-  REGIONS['panel:green']   = { x: LX + 15, y: 104.5, w: 30, h: 11 };
-  REGIONS['panel:dark1']   = { x: RX + 8,  y: 96,    w: 28, h: 16 };
-  REGIONS['panel:dark2']   = { x: RX + 40, y: 96,    w: 28, h: 16 };
+  REGIONS['panel:green']   = { x: LX + 15.5, y: 105,   w: 29,   h: 10 };
+  REGIONS['panel:dark1']   = { x: RX + 8.7,  y: 96.7,  w: 26.6, h: 14.6 };
+  REGIONS['panel:dark2']   = { x: RX + 40.7, y: 96.7,  w: 26.6, h: 14.6 };
 })();
 
 let curP = 1, curLeft = 0, curTop = 0;
@@ -1307,9 +1306,10 @@ resetAll();
 </script>
 
 <!-- =====================================================================
-     SCENE 3 — content
-     Real DOM positioned over the canvas via DEX_UI.rect(), so everything
-     here stays selectable, crawlable text rather than baked pixels.
+     SCENE 3 — content and controls
+     The canvas paints sockets; every cap that sits in one is a DOM element,
+     so a press is real travel into the case rather than a tint on flat art.
+     Text stays selectable and crawlable.
      ===================================================================== -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Silkscreen:wght@400;700&display=swap">
 <style>
@@ -1328,37 +1328,22 @@ resetAll();
   }
   #dexLayer.on { opacity: 1; }
 
-  #screenMain, #screenSide, .hit, .padtile, #greenPad {
-    position: fixed;
-    pointer-events: auto;
-  }
+  #screenMain, #screenSide, .cap { position: fixed; pointer-events: auto; }
 
   /* ---------------------------------------------------------- main screen */
   #screenMain {
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: none;
-    color: var(--ink);
-    font-family: var(--fb);
-    line-height: 1.5;
+    overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+    color: var(--ink); font-family: var(--fb); line-height: 1.5;
     transition: background-color 180ms ease, color 180ms ease;
   }
   #screenMain::-webkit-scrollbar { display: none; }
   #screenMain .pad { padding: 1.1em 1.3em 1.6em; }
 
   .eyebrow {
-    font-family: var(--fd);
-    font-size: 0.62em;
-    letter-spacing: 0.14em;
-    color: var(--ink-dim);
-    display: flex;
-    justify-content: space-between;
-    gap: 1em;
-    border-bottom: 2px solid var(--rule);
-    padding-bottom: 0.5em;
-    margin-bottom: 0.9em;
+    font-family: var(--fd); font-size: 0.62em; letter-spacing: 0.14em;
+    color: var(--ink-dim); display: flex; justify-content: space-between; gap: 1em;
+    border-bottom: 2px solid var(--rule); padding-bottom: 0.5em; margin-bottom: 0.9em;
   }
-
   .lead { font-family: var(--fd); font-size: 1.15em; line-height: 1.3; margin: 0 0 0.35em; }
   .sublead { font-size: 0.95em; color: var(--ink-dim); margin: 0 0 1em; }
 
@@ -1394,7 +1379,7 @@ resetAll();
     border-top: 2px solid var(--rule); margin-top: 1.1em; padding-top: 0.7em;
   }
 
-  /* Backlight on — the round black button drives this. */
+  /* Backlight — the round black button drives this. */
   #screenMain.lit { background: #16210f; color: #d9f2cb; }
   #screenMain.lit .eyebrow,
   #screenMain.lit .sublead,
@@ -1405,7 +1390,6 @@ resetAll();
   #screenMain.lit .note { border-top-color: #465a3c; }
   #screenMain.lit .bul li::before { background: #87a978; }
   #screenMain.lit a { color: #a8e6ff; border-bottom-color: #4d7f97; }
-  #screenMain.lit a:hover { border-bottom-color: #a8e6ff; }
 
   /* ---------------------------------------------------------- side screen */
   #screenSide {
@@ -1418,78 +1402,57 @@ resetAll();
     font-family: var(--fd); font-size: 0.62em; letter-spacing: 0.12em; color: #7fd06a;
   }
 
-  /* ------------------------------------------------- pressable, everywhere
-     Every control shares one physical model: it lifts on hover, and on press
-     it drops into the case and the raised lip flips to an inner shadow. */
-  .hit, .padtile, #greenPad {
+  /* =================================================================== caps
+     One physical model for every control. The cap is a solid slab; the
+     `0 var(--lift) 0 var(--side)` shadow is its extruded side wall. Pressing
+     translates the slab down by exactly that height and collapses the wall to
+     nothing, so the cap bottoms out in the socket the canvas painted.
+     ==================================================================== */
+  .cap {
     appearance: none;
-    background: transparent;
-    border: 0;
-    padding: 0;
+    margin: 0; padding: 0; border: 0;
     cursor: pointer;
-    border-radius: 3px;
-    transition: transform 70ms ease, box-shadow 70ms ease, background-color 140ms ease;
+    background: var(--face);
+    color: var(--label);
+    font-family: var(--fd);
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; text-decoration: none; white-space: nowrap;
+    border-radius: 2px;
+    box-shadow:
+      inset 0 2px 0 rgba(255, 255, 255, 0.32),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.20),
+      0 var(--lift) 0 var(--side),
+      0 calc(var(--lift) + 2px) 7px rgba(0, 0, 0, 0.50);
+    transform: translateY(0);
+    transition: transform 65ms cubic-bezier(.2, .7, .3, 1),
+                box-shadow 65ms ease,
+                background-color 140ms ease,
+                filter 130ms ease;
     will-change: transform;
   }
-  .hit::after, .padtile::after, #greenPad::after {
-    content: "";
-    position: absolute; inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0) 58%);
-    opacity: 0;
-    transition: opacity 140ms ease;
-    pointer-events: none;
+  .cap:hover { filter: brightness(1.13); }
+  .cap:active, .cap.press {
+    transform: translateY(var(--lift));
+    box-shadow:
+      inset 0 3px 7px rgba(0, 0, 0, 0.55),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+      0 0 0 var(--side);
+    filter: brightness(0.9);
   }
-  .hit:hover, .padtile:hover, #greenPad:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 0 rgba(0,0,0,0.42), 0 8px 12px rgba(0,0,0,0.30);
-  }
-  .hit:hover::after, .padtile:hover::after, #greenPad:hover::after { opacity: 1; }
+  .cap:focus-visible { outline: 3px solid #ffd23f; outline-offset: 3px; }
 
-  .hit:active, .hit.press,
-  .padtile:active, .padtile.press,
-  #greenPad:active, #greenPad.press {
-    transform: translateY(3px);
-    box-shadow: inset 0 4px 8px rgba(0,0,0,0.55);
-    background-color: rgba(0,0,0,0.16);
+  .cap.round { border-radius: 50%; }
+  .cap.pill  { border-radius: 999px; }
+  .cap.glyph { font-family: system-ui, 'Segoe UI Symbol', sans-serif; }
+  .cap.stack {
+    flex-direction: column; align-items: flex-start; justify-content: center;
+    gap: 0.3em; padding: 0 0.85em; white-space: normal;
   }
-  .hit:active::after, .hit.press::after,
-  .padtile:active::after, .padtile.press::after,
-  #greenPad:active::after, #greenPad.press::after { opacity: 0; }
-
-  .hit.round { border-radius: 50%; }
-  .hit.pill  { border-radius: 999px; }
-
-  .hit[aria-current="true"] {
-    background-color: rgba(255,255,255,0.30);
-    outline: 3px solid #ffffff;
-    outline-offset: -3px;
-  }
-  .hit:focus-visible, .padtile:focus-visible, #greenPad:focus-visible {
-    outline: 3px solid #ffd23f; outline-offset: 2px;
-  }
-
-  /* ------------------------------------------------------------ pad tiles */
-  .padtile {
-    display: flex; flex-direction: column; justify-content: center; gap: 0.25em;
-    padding: 0 0.9em;
-    text-decoration: none;
-    font-family: var(--fb);
-    overflow: hidden;
-  }
-  .padtile .tag {
-    font-family: var(--fd); font-size: 0.55em; letter-spacing: 0.12em; color: #93ad80;
-  }
-  .padtile .name {
-    font-family: var(--fd); font-size: 0.78em; line-height: 1.3; color: #edf8e3;
-  }
-
-  #greenPad {
-    display: flex; align-items: center; justify-content: center; gap: 0.5em;
-    font-family: var(--fd); color: #17300d;
-  }
-  #greenPad .idx { font-size: 1.45em; letter-spacing: 0.04em; }
-  #greenPad .of  { font-size: 0.68em; opacity: 0.72; }
+  .cap .tag { font-size: 0.62em; letter-spacing: 0.12em; opacity: 0.7; }
+  .cap .name { font-size: 0.92em; line-height: 1.25; }
+  .cap .idx { font-size: 1.6em; letter-spacing: 0.04em; }
+  .cap .of  { font-size: 0.75em; opacity: 0.72; }
 
   /* -------------------------------------------------- plain-text fallback */
   #hatch {
@@ -1503,9 +1466,7 @@ resetAll();
   #hatch .sep { color: #45454f; margin: 0 6px; }
 
   @media (prefers-reduced-motion: reduce) {
-    #dexLayer { transition: none; }
-    .hit, .padtile, #greenPad { transition: none; }
-    .hit:hover, .padtile:hover, #greenPad:hover { transform: none; }
+    #dexLayer, .cap { transition: none; }
   }
   @media (max-width: 760px) {
     #hatch { font-size: 11px; left: 14px; bottom: 14px; }
@@ -1515,8 +1476,7 @@ resetAll();
 <div id="dexLayer">
   <section id="screenMain" tabindex="0" aria-label="Dex entry"></section>
   <aside id="screenSide" aria-hidden="true"></aside>
-  <nav id="hits" aria-label="Dex navigation"></nav>
-  <div id="pads"></div>
+  <nav id="controls" aria-label="Dex controls"></nav>
 </div>
 
 <footer id="hatch">
@@ -1542,7 +1502,7 @@ const SECTIONS = {
       ['TEAM', 'Formula Racing SAE — Electrical Subteam'],
       ['BASED', 'Vancouver, BC']
     ],
-    note: 'Every control works. Keys pick a section, the D-pad scrolls and steps, the pills step too, the white buttons page, the round black button turns the backlight on, and the gold button jumps to contact.'
+    note: 'Every control works. Keys pick a section, the D-pad scrolls and steps, the pills step too, the white buttons page, the round black button turns on the backlight, and the gold button jumps to contact.'
   },
 
   ABOUT: {
@@ -1662,6 +1622,21 @@ const LINKS = {
   SOURCE: 'https://github.com/deewang/deewang.github.io'
 };
 
+// Cap colours: the face, the extruded side wall beneath it, and the label.
+const SKIN = {
+  key:   { face: '#6cc0e8', side: '#24617f', label: '#0c3350' },
+  keyOn: { face: '#ffd45e', side: '#a9791d', label: '#3a2a06' },
+  link:  { face: '#7fd0bd', side: '#2c7268', label: '#093a32' },
+  red:   { face: '#c8503f', side: '#6d211a', label: '#ffdcd6' },
+  blue:  { face: '#4a9ed8', side: '#22557a', label: '#eaf6ff' },
+  white: { face: '#eef0f1', side: '#98a1a8', label: '#2b3138' },
+  black: { face: '#32323c', side: '#131319', label: '#c9c9d4' },
+  gold:  { face: '#e8b93c', side: '#8d6314', label: '#3d2a05' },
+  green: { face: '#6ab04c', side: '#3a6a28', label: '#123009' },
+  pad:   { face: '#55663f', side: '#2b361d', label: '#e9f5dc' },
+  dpad:  { face: '#565662', side: '#24242c', label: '#cfcfda' }
+};
+
 // ------------------------------------------------------------------ render
 const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const pad3 = n => String(n).padStart(3, '0');
@@ -1670,8 +1645,7 @@ const pad2 = n => String(n).padStart(2, '0');
 const layer = document.getElementById('dexLayer');
 const main  = document.getElementById('screenMain');
 const side  = document.getElementById('screenSide');
-const hits  = document.getElementById('hits');
-const pads  = document.getElementById('pads');
+const rack  = document.getElementById('controls');
 
 let active = 'HOME';
 
@@ -1716,17 +1690,24 @@ function renderSide() {
 }
 
 function renderCounter() {
-  const green = document.getElementById('greenPad');
-  if (!green) return;
-  green.innerHTML =
-    '<span class="idx">' + pad2(ORDER.indexOf(active) + 1) + '</span>' +
-    '<span class="of">/ ' + pad2(ORDER.length) + '</span>';
+  const g = rack.querySelector('[data-region="panel:green"]');
+  if (!g) return;
+  g.innerHTML = '<span class="idx">' + pad2(ORDER.indexOf(active) + 1) + '</span>' +
+                '<span class="of">/ ' + pad2(ORDER.length) + '</span>';
 }
 
 function markKeys() {
-  [...hits.querySelectorAll('[data-key]')].forEach(function (b) {
-    b.setAttribute('aria-current', String(b.dataset.key === active));
+  [...rack.querySelectorAll('[data-key]')].forEach(function (b) {
+    const on = b.dataset.key === active;
+    b.setAttribute('aria-current', String(on));
+    skin(b, on ? SKIN.keyOn : SKIN.key);
   });
+}
+
+function skin(el, s) {
+  el.style.setProperty('--face', s.face);
+  el.style.setProperty('--side', s.side);
+  el.style.setProperty('--label', s.label);
 }
 
 function show(name) {
@@ -1738,33 +1719,37 @@ function show(name) {
   markKeys();
 }
 
-function stepSection(d) {
-  show(ORDER[(ORDER.indexOf(active) + d + ORDER.length) % ORDER.length]);
-}
-function scrollBy(frac) {
-  main.scrollBy({ top: main.clientHeight * frac, behavior: 'smooth' });
-}
-function toggleLit() {
-  main.classList.toggle('lit');
-}
+const stepSection = d => show(ORDER[(ORDER.indexOf(active) + d + ORDER.length) % ORDER.length]);
+const scrollPage  = f => main.scrollBy({ top: main.clientHeight * f, behavior: 'smooth' });
+const toggleLit   = () => main.classList.toggle('lit');
 
-// Visible press for anything triggered by the keyboard rather than a click.
+// Keyboard activation gets the same visible travel as a click.
 function flash(region) {
-  const el = layer.querySelector('[data-region="' + region + '"]');
+  const el = rack.querySelector('[data-region="' + region + '"]');
   if (!el) return;
   el.classList.add('press');
-  setTimeout(() => el.classList.remove('press'), 130);
+  setTimeout(() => el.classList.remove('press'), 140);
 }
 
-// ------------------------------------------------------------- hit targets
-// Every region the artwork draws is now bound to something real.
+// ---------------------------------------------------------------- controls
+const DPAD = {
+  'dpad:up':    () => scrollPage(-0.6),
+  'dpad:down':  () => scrollPage(0.6),
+  'dpad:left':  () => stepSection(-1),
+  'dpad:right': () => stepSection(1)
+};
+
 const EXTRAS = [
-  { region: 'btn:red',    shape: 'pill',  label: 'Previous section', act: () => stepSection(-1) },
-  { region: 'btn:blue',   shape: 'pill',  label: 'Next section',     act: () => stepSection(1) },
-  { region: 'btn:white1', shape: '',      label: 'Page up',          act: () => scrollBy(-0.85) },
-  { region: 'btn:white2', shape: '',      label: 'Page down',        act: () => scrollBy(0.85) },
-  { region: 'btn:black',  shape: 'round', label: 'Toggle backlight', act: toggleLit },
-  { region: 'btn:gold',   shape: 'round', label: 'Jump to contact',  act: () => show('CONTACT') }
+  { region: 'dpad:up',     skin: 'dpad',  cls: 'glyph', text: '▲', label: 'Scroll up' },
+  { region: 'dpad:down',   skin: 'dpad',  cls: 'glyph', text: '▼', label: 'Scroll down' },
+  { region: 'dpad:left',   skin: 'dpad',  cls: 'glyph', text: '◀', label: 'Previous section' },
+  { region: 'dpad:right',  skin: 'dpad',  cls: 'glyph', text: '▶', label: 'Next section' },
+  { region: 'btn:red',     skin: 'red',   cls: 'pill',  text: '',  label: 'Previous section', act: () => stepSection(-1) },
+  { region: 'btn:blue',    skin: 'blue',  cls: 'pill',  text: '',  label: 'Next section',     act: () => stepSection(1) },
+  { region: 'btn:white1',  skin: 'white', cls: 'glyph', text: '▲', label: 'Page up',          act: () => scrollPage(-0.85) },
+  { region: 'btn:white2',  skin: 'white', cls: 'glyph', text: '▼', label: 'Page down',        act: () => scrollPage(0.85) },
+  { region: 'btn:black',   skin: 'black', cls: 'round', text: '',  label: 'Toggle backlight', act: toggleLit },
+  { region: 'btn:gold',    skin: 'gold',  cls: 'round', text: '',  label: 'Jump to contact',  act: () => show('CONTACT') }
 ];
 
 const TILES = [
@@ -1774,76 +1759,66 @@ const TILES = [
     href: 'https://github.com/deewang/Formula-Strain-Gauge-Sensor' }
 ];
 
-const DPAD = {
-  'dpad:up':    () => scrollBy(-0.6),
-  'dpad:down':  () => scrollBy(0.6),
-  'dpad:left':  () => stepSection(-1),
-  'dpad:right': () => stepSection(1)
-};
-
 function build() {
-  hits.innerHTML = '';
-  pads.innerHTML = '';
+  rack.innerHTML = '';
 
   DEX_UI.keys.flat().forEach(function (label) {
-    const el = document.createElement(LINKS[label] ? 'a' : 'button');
-    el.className = 'hit';
+    const isLink = !!LINKS[label];
+    const el = document.createElement(isLink ? 'a' : 'button');
+    el.className = 'cap';
     el.dataset.region = 'key:' + label;
+    el.textContent = label;
     const pretty = label.charAt(0) + label.slice(1).toLowerCase();
-    if (LINKS[label]) {
+    if (isLink) {
       el.href = LINKS[label];
       if (/^https?:/.test(LINKS[label])) { el.target = '_blank'; el.rel = 'noopener'; }
       el.setAttribute('aria-label', pretty);
+      skin(el, SKIN.link);
     } else {
       el.type = 'button';
       el.dataset.key = label;
       el.setAttribute('aria-label', pretty);
       el.addEventListener('click', () => show(label));
+      skin(el, SKIN.key);
     }
-    hits.appendChild(el);
-  });
-
-  Object.keys(DPAD).forEach(function (region) {
-    const b = document.createElement('button');
-    b.className = 'hit';
-    b.type = 'button';
-    b.dataset.region = region;
-    b.setAttribute('aria-label', region.replace('dpad:', 'D-pad '));
-    b.addEventListener('click', DPAD[region]);
-    hits.appendChild(b);
+    rack.appendChild(el);
   });
 
   EXTRAS.forEach(function (x) {
     const b = document.createElement('button');
-    b.className = 'hit ' + x.shape;
+    b.className = 'cap ' + x.cls;
     b.type = 'button';
     b.dataset.region = x.region;
-    b.setAttribute('aria-label', x.label);
+    b.textContent = x.text;
     b.title = x.label;
-    b.addEventListener('click', x.act);
-    hits.appendChild(b);
+    b.setAttribute('aria-label', x.label);
+    b.addEventListener('click', x.act || DPAD[x.region]);
+    skin(b, SKIN[x.skin]);
+    rack.appendChild(b);
   });
 
   TILES.forEach(function (t) {
     const a = document.createElement('a');
-    a.className = 'padtile';
+    a.className = 'cap stack';
     a.dataset.region = t.region;
     a.href = t.href;
     a.target = '_blank';
     a.rel = 'noopener';
     a.innerHTML = '<span class="tag">' + esc(t.tag) + '</span>' +
                   '<span class="name">' + esc(t.name) + '</span>';
-    pads.appendChild(a);
+    skin(a, SKIN.pad);
+    rack.appendChild(a);
   });
 
   const green = document.createElement('button');
-  green.id = 'greenPad';
+  green.className = 'cap';
   green.type = 'button';
   green.dataset.region = 'panel:green';
-  green.setAttribute('aria-label', 'Next section');
   green.title = 'Section counter — click to advance';
+  green.setAttribute('aria-label', 'Next section');
   green.addEventListener('click', () => stepSection(1));
-  pads.appendChild(green);
+  skin(green, SKIN.green);
+  rack.appendChild(green);
 }
 
 // ------------------------------------------------------------------ layout
@@ -1864,16 +1839,18 @@ function place() {
   main.style.borderRadius = (unit * 2) + 'px';   // matches the artwork's LCD corners
   side.style.fontSize = (unit * 1.62) + 'px';
 
-  [...hits.children, ...pads.children].forEach(function (el) {
+  [...rack.children].forEach(function (el) {
     const r = DEX_UI.rect(el.dataset.region);
     if (!r) return;
+    // The cap is shorter than its socket by exactly the side-wall height, so
+    // cap plus wall fills the well at rest and the cap bottoms out on press.
+    const lift = Math.max(2, Math.min(unit * 0.8, r.height * 0.26));
+    el.style.setProperty('--lift', lift + 'px');
     el.style.left = r.left + 'px';
     el.style.top = r.top + 'px';
     el.style.width = r.width + 'px';
-    el.style.height = r.height + 'px';
-    if (el.classList.contains('padtile') || el.id === 'greenPad') {
-      el.style.fontSize = (unit * 1.55) + 'px';
-    }
+    el.style.height = (r.height - lift) + 'px';
+    el.style.fontSize = (unit * 1.3) + 'px';
   });
 }
 
@@ -1889,10 +1866,7 @@ const enter = PORTFOLIO.enterUI;
 PORTFOLIO.enterUI = function () {
   enter();
   clearTimeout(revealTimer);
-  revealTimer = setTimeout(function () {
-    place();
-    layer.classList.add('on');
-  }, SETTLE_AFTER);
+  revealTimer = setTimeout(function () { place(); layer.classList.add('on'); }, SETTLE_AFTER);
 };
 
 const reset = PORTFOLIO.resetUI;
@@ -1904,10 +1878,8 @@ PORTFOLIO.resetUI = function () {
 
 // ---------------------------------------------------------------- keyboard
 const KEYMAP = {
-  ArrowLeft:  'dpad:left',
-  ArrowRight: 'dpad:right',
-  ArrowUp:    'dpad:up',
-  ArrowDown:  'dpad:down'
+  ArrowLeft: 'dpad:left', ArrowRight: 'dpad:right',
+  ArrowUp: 'dpad:up', ArrowDown: 'dpad:down'
 };
 document.addEventListener('keydown', function (ev) {
   if (!layer.classList.contains('on')) return;
