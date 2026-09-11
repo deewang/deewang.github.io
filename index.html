@@ -3,34 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Daniel's Pokedex</title>
+<title>Daniel Wang — Pokedex Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-  html, body {
-    margin: 0; padding: 0; width: 100%; height: 100%;
-    background: #08080a; overflow: hidden;
-    font-family: -apple-system, "Segoe UI", sans-serif;
+  /* ============================================================ foundation */
+  :root {
+    --fd: 'Chakra Petch', 'Segoe UI', sans-serif;      /* labels, keys, headings */
+    --fb: 'IBM Plex Sans', system-ui, sans-serif;      /* running text */
+    --fm: 'IBM Plex Mono', ui-monospace, monospace;    /* data, meta */
+
+    /* injection-moulded red plastic */
+    --shell-lit:  #f4715a;
+    --shell:      #d83f2b;
+    --shell-mid:  #bb3120;
+    --shell-deep: #8d2214;
+    --shell-edge: #5e150c;
+
+    --cream:      #f4f6f7;
+    --cream-mid:  #d5dade;
+    --cream-deep: #9ba3a9;
+
+    --glass:      #101715;
+    --glass-lit:  #0d1f12;
+
+    --amber:      #ffc53d;
+    --ink:        #10151a;
   }
 
-  /* ============================= layer stack =============================
-     #uiLayer   z1  — the dex interface, hidden until the flash hands over
-     #landing   z10 — intro animation, removed once it has handed over
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #07080a;
+    overflow: hidden;
+    font-family: var(--fb);
+  }
+
+  /* ============================================================ layer stack
+     #uiLayer   z1  — the device, hidden until the flash hands over
+     #landing   z10 — pixel intro, removed once it has handed over
      #fullFlash z20 — the white burst that covers the swap
      #replay    z30 — always reachable
      ====================================================================== */
 
   #uiLayer {
     position: fixed; inset: 0; z-index: 1;
-    background: #08080a;
+    background:
+      radial-gradient(120% 90% at 50% 12%, #1c1f26 0%, #0a0b0f 60%, #06070a 100%);
     opacity: 0; visibility: hidden;
+    overflow: hidden;
   }
   #uiLayer.on { opacity: 1; visibility: visible; }
-  #uiStage { position: absolute; inset: 0; overflow: hidden; }
-  #dex {
-    position: absolute;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    will-change: transform;
-  }
 
   #landing {
     position: fixed; inset: 0; z-index: 10;
@@ -41,62 +64,301 @@
   #landing.gone { display: none; }
 
   #titleWrap { text-align: center; margin-bottom: -108px; position: relative; top: -58px; z-index: 4; }
-  #titleCanvas {
-    display: block; margin: 0 auto;
-    image-rendering: pixelated; image-rendering: crisp-edges;
-  }
+  #titleCanvas { display: block; margin: 0 auto; image-rendering: pixelated; }
   #hintCanvas {
-    display: block; margin: 26px auto 0;
-    image-rendering: pixelated; image-rendering: crisp-edges;
+    display: block; margin: 26px auto 0; image-rendering: pixelated;
     animation: hintPulse 2.4s ease-in-out infinite;
   }
-  @keyframes hintPulse {
-    0%, 100% { opacity: 0.12; }
-    50%      { opacity: 1; }
-  }
-  #rigWrap {
-    position: relative; width: 432px; height: 567px;
-    cursor: pointer; perspective: 1700px;
-  }
-  #rig {
-    position: relative; width: 432px; height: 567px;
-    transform-style: preserve-3d;
-  }
-  canvas.face {
-    position: absolute; top: 0; left: 0;
-    image-rendering: pixelated; image-rendering: crisp-edges;
-  }
+  @keyframes hintPulse { 0%, 100% { opacity: 0.12; } 50% { opacity: 1; } }
+
+  #rigWrap { position: relative; width: 432px; height: 567px; cursor: pointer; perspective: 1700px; }
+  #rig { position: relative; width: 432px; height: 567px; transform-style: preserve-3d; }
+  canvas.face { position: absolute; top: 0; left: 0; image-rendering: pixelated; }
   #base, #backPlate, #lidOuter, #lidInner { backface-visibility: hidden; }
   #backPlate { transform: rotateY(180deg); }
   #lidHinge {
-    position: absolute; top: 0; left: 0;
-    width: 432px; height: 567px;
-    transform-origin: 91.667% 50%;
-    transform-style: preserve-3d;
+    position: absolute; top: 0; left: 0; width: 432px; height: 567px;
+    transform-origin: 91.667% 50%; transform-style: preserve-3d;
   }
   #lidInner { transform: rotateY(180deg); visibility: hidden; }
 
   #fullFlash {
     position: fixed; top: 0; left: 0;
-    image-rendering: pixelated; image-rendering: crisp-edges;
+    image-rendering: pixelated;
     z-index: 20; pointer-events: none; opacity: 0;
   }
 
   #replay {
-    position: fixed; bottom: 26px; right: 26px;
-    background: transparent; border: 1px solid #3c3c46; color: #7e7e8c;
-    font-size: 12px; padding: 8px 16px; border-radius: 6px; cursor: pointer;
-    letter-spacing: 1px; text-transform: uppercase; z-index: 30;
-    opacity: 0; pointer-events: none; transition: opacity 300ms ease;
+    position: fixed; bottom: 24px; right: 24px; z-index: 30;
+    background: rgba(255,255,255,0.04); border: 1px solid #35353f; color: #8b8b98;
+    font-family: var(--fm); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 9px 18px; border-radius: 7px; cursor: pointer;
+    opacity: 0; pointer-events: none; transition: opacity 300ms ease, color 160ms, border-color 160ms;
+    backdrop-filter: blur(6px);
   }
   #replay.visible { opacity: 1; pointer-events: auto; }
-  #replay:hover { background: #1b1b21; color: #cfcfda; border-color: #55555f; }
+  #replay:hover { color: #fff; border-color: #6a6a78; background: rgba(255,255,255,0.09); }
+
+  /* ================================================================ device
+     A real object rendered in DOM: moulded plastic, domed keys, glass. The
+     whole thing is authored at a fixed design size and scaled to fit, so
+     every proportion holds at any viewport.
+     ====================================================================== */
+  #stage {
+    position: absolute; left: 50%; top: 0;
+    width: 1196px; height: 880px;
+    transform-origin: 50% 0;
+    will-change: transform;
+  }
+
+  .dex {
+    position: absolute; inset: 0;
+    display: grid;
+    grid-template-columns: 560px 76px 560px;
+    filter: drop-shadow(0 40px 70px rgba(0,0,0,0.65));
+  }
+
+  /* ------------------------------------------------------------- the halves */
+  .half {
+    position: relative;
+    background:
+      linear-gradient(158deg,
+        var(--shell-lit) 0%, var(--shell) 26%,
+        var(--shell-mid) 58%, var(--shell-deep) 88%, var(--shell-edge) 100%);
+    box-shadow:
+      inset 0 2px 0 rgba(255,255,255,0.34),
+      inset 2px 0 0 rgba(255,255,255,0.12),
+      inset -2px 0 0 rgba(0,0,0,0.28),
+      inset 0 -3px 0 rgba(0,0,0,0.40);
+  }
+  /* a soft sheen raking across the plastic */
+  .half::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(118deg,
+      rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.05) 22%,
+      rgba(255,255,255,0) 46%, rgba(0,0,0,0.10) 100%);
+  }
+
+  .half.left  { border-radius: 26px 6px 6px 26px; }
+  .half.right { border-radius: 6px 26px 26px 6px; margin-top: 96px; height: 784px; }
+
+  .half > * { position: relative; z-index: 1; }
+
+  /* --------------------------------------------------------------- top band */
+  .topband {
+    height: 152px;
+    display: flex; align-items: center; gap: 26px;
+    padding: 0 30px;
+  }
+  .orb {
+    width: 104px; height: 104px; border-radius: 50%; flex: none;
+    background:
+      radial-gradient(circle at 34% 28%, #eafaff 0%, #7fd4f4 22%, #2e9fd6 52%, #15618f 82%, #0a3b5c 100%);
+    box-shadow:
+      0 0 0 7px #eef1f3,
+      0 0 0 9px rgba(0,0,0,0.45),
+      inset 0 -8px 16px rgba(0,0,0,0.45),
+      0 8px 18px rgba(0,0,0,0.45);
+    position: relative;
+  }
+  .orb::after {
+    content: ""; position: absolute;
+    left: 20%; top: 13%; width: 34%; height: 26%;
+    border-radius: 50%;
+    background: linear-gradient(160deg, rgba(255,255,255,0.95), rgba(255,255,255,0));
+    filter: blur(1px);
+  }
+  .leds { display: flex; gap: 16px; }
+  .led {
+    width: 30px; height: 30px; border-radius: 50%;
+    box-shadow: inset 0 -3px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(0,0,0,0.4), 0 0 14px 2px var(--glow);
+    background: radial-gradient(circle at 34% 28%, #ffffff 0%, var(--c) 46%, var(--d) 100%);
+  }
+
+  /* ----------------------------------------------------------- screen frame */
+  .frame {
+    margin: 0 24px;
+    height: 452px;
+    background: linear-gradient(168deg, #ffffff 0%, var(--cream) 30%, var(--cream-mid) 88%, var(--cream-deep) 100%);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 78px 100%, 0 calc(100% - 78px));
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    padding: 20px 20px 0;
+    display: flex; flex-direction: column;
+  }
+  .frame .lamps { display: flex; gap: 14px; justify-content: center; margin-bottom: 14px; }
+  .frame .lamp {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff9d8e, #c03726 60%, #7d2013);
+    box-shadow: inset 0 -2px 3px rgba(0,0,0,0.45), 0 0 0 2px rgba(0,0,0,0.28);
+  }
+
+  .glass {
+    flex: 1; min-height: 0;
+    border-radius: 12px;
+    background: linear-gradient(170deg, #1c2624 0%, var(--glass) 42%, #080d0c 100%);
+    box-shadow:
+      inset 0 0 0 3px rgba(0,0,0,0.65),
+      inset 0 8px 22px rgba(0,0,0,0.7),
+      0 2px 0 rgba(255,255,255,0.6);
+    position: relative;
+    overflow: hidden;
+  }
+  /* the reflection on the cover glass */
+  .glass::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 3;
+    background: linear-gradient(126deg,
+      rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.03) 26%,
+      rgba(255,255,255,0) 52%);
+  }
+
+  .frame .foot { height: 60px; display: flex; align-items: center; padding: 0 4px 0 84px; }
+  .foot .dot {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff9d8e, #c03726 60%, #7d2013);
+    box-shadow: inset 0 -2px 3px rgba(0,0,0,0.45), 0 0 0 2px rgba(0,0,0,0.25);
+  }
+  .foot .grille { margin-left: auto; display: grid; gap: 5px; }
+  .foot .grille i {
+    display: block; width: 78px; height: 3px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--cream-deep), #b9c0c5);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.8);
+  }
+
+  /* ---------------------------------------------------------- left controls */
+  .controls {
+    height: 260px;
+    padding: 18px 26px 0;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto 1fr;
+    column-gap: 20px; row-gap: 14px;
+    align-items: start;
+  }
+  .pillrow { display: flex; gap: 14px; align-items: center; }
+
+  /* ------------------------------------------------------------ right half */
+  .sidewrap { padding: 26px 24px 0; }
+  .sidescreen {
+    height: 132px; border-radius: 10px;
+    background: linear-gradient(170deg, #1b2422 0%, #0e1513 45%, #070b0a 100%);
+    box-shadow:
+      inset 0 0 0 3px rgba(0,0,0,0.6),
+      inset 0 6px 18px rgba(0,0,0,0.65),
+      0 2px 0 rgba(255,255,255,0.16);
+    padding: 0 22px;
+    display: flex; flex-direction: column; justify-content: center; gap: 7px;
+    overflow: hidden;
+  }
+
+  .keypad {
+    margin: 26px 24px 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 9px;
+  }
+
+  .strip { margin: 22px 24px 0; display: flex; align-items: center; gap: 16px; }
+  .strip .bar {
+    width: 84px; height: 9px; border-radius: 5px;
+    background: linear-gradient(180deg, #1b1b21, #0a0a0e);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.22);
+  }
+
+  .lowrow { margin: 18px 24px 0; display: flex; align-items: center; gap: 14px; }
+  .tiles { margin: 20px 24px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* ---------------------------------------------------------------- hinge */
+  .hinge {
+    background: linear-gradient(90deg,
+      #6b1a10 0%, #9c2717 14%, #d03a24 34%, #f0715a 50%,
+      #d03a24 66%, #9c2717 86%, #6b1a10 100%);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.22), inset 0 -3px 0 rgba(0,0,0,0.45);
+    border-radius: 5px;
+    position: relative;
+    margin: 74px 0 0;
+  }
+  .hinge::before, .hinge::after {
+    content: ""; position: absolute; left: 0; right: 0; height: 16px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.15));
+    box-shadow: 0 1px 0 rgba(255,255,255,0.14);
+  }
+  .hinge::before { top: 58px; }
+  .hinge::after  { bottom: 58px; }
 </style>
 </head>
 <body>
 
 <div id="uiLayer">
-  <div id="uiStage"><canvas id="dex"></canvas></div>
+  <div id="stage">
+    <div class="dex">
+
+      <!-- ============================================ left half: the screen -->
+      <div class="half left">
+        <div class="topband">
+          <div class="orb"></div>
+          <div class="leds">
+            <div class="led" style="--c:#ff5a3c; --d:#8e2312; --glow:rgba(255,90,60,.55)"></div>
+            <div class="led" style="--c:#ffd24a; --d:#916d10; --glow:rgba(255,210,74,.5)"></div>
+            <div class="led" style="--c:#79e05c; --d:#2d6b1d; --glow:rgba(121,224,92,.5)"></div>
+          </div>
+        </div>
+
+        <div class="frame">
+          <div class="lamps"><span class="lamp"></span><span class="lamp"></span></div>
+          <div class="glass"><section id="screenMain" tabindex="0" aria-label="Dex entry"></section></div>
+          <div class="foot">
+            <span class="dot"></span>
+            <span class="grille"><i></i><i></i><i></i><i></i><i></i></span>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="btn round black" data-act="light" title="Backlight"
+                  aria-label="Toggle backlight"></button>
+          <div class="pillrow" style="grid-column: 2 / 4;">
+            <button class="btn pill red"  data-act="open" aria-label="Open selected key"></button>
+            <button class="btn pill blue" data-act="home" aria-label="Back to index"></button>
+          </div>
+          <button class="btn greenpad" data-act="next" aria-label="Next section"
+                  style="grid-column: 1 / 3;"></button>
+          <div class="dpad" style="grid-column: 3;">
+            <div class="dpad-plate">
+              <span class="ar u">▲</span><span class="ar d">▼</span>
+              <span class="ar l">◀</span><span class="ar r">▶</span>
+              <span class="hub"></span>
+            </div>
+            <button class="dz u" data-dir="up"    aria-label="Cursor up"></button>
+            <button class="dz d" data-dir="down"  aria-label="Cursor down"></button>
+            <button class="dz l" data-dir="left"  aria-label="Cursor left"></button>
+            <button class="dz r" data-dir="right" aria-label="Cursor right"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hinge"></div>
+
+      <!-- ========================================= right half: the controls -->
+      <div class="half right">
+        <div class="sidewrap">
+          <aside class="sidescreen" id="screenSide" aria-hidden="true"></aside>
+        </div>
+
+        <nav class="keypad" id="keypad" aria-label="Sections"></nav>
+
+        <div class="strip"><span class="bar"></span><span class="bar"></span></div>
+
+        <div class="lowrow">
+          <button class="btn white" data-act="pageup"   aria-label="Page up">▲</button>
+          <button class="btn white" data-act="pagedown" aria-label="Page down">▼</button>
+          <button class="btn round gold" data-act="contact" title="Contact"
+                  aria-label="Jump to contact" style="margin-left:auto"></button>
+        </div>
+
+        <div class="tiles" id="tiles"></div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <div id="landing">
@@ -119,533 +381,19 @@
 <canvas id="fullFlash"></canvas>
 <button id="replay">Replay</button>
 
+<footer id="hatch">
+  <b>Daniel Wang</b><span class="sep">/</span>Computer Engineering, UBC 2028<br>
+  <a href="./Daniel_Wang_Resume.pdf">Resume</a><span class="sep">·</span><a
+     href="https://github.com/deewang">GitHub</a><span class="sep">·</span><a
+     href="https://linkedin.com/in/daniel-wang77">LinkedIn</a><span class="sep">·</span><a
+     href="mailto:daniel.yuewang@gmail.com">daniel.yuewang@gmail.com</a>
+</footer>
+
 <script>
 // Bridge between the two scenes. The landing calls enterUI() the moment the
 // white burst covers the frame; the replay button calls resetUI().
 window.PORTFOLIO = {};
 </script>
-
-<!-- =====================================================================
-     SCENE 2 — the dex interface (was ui.html)
-     Defined first so PORTFOLIO.enterUI exists before anything can call it.
-     ===================================================================== -->
-<script>
-(function () {
-
-// ---------- unit space ----------
-const S = 4;                       // supersample: 1 unit = S grid cells
-const PH = 118;                    // panel height in units
-const CROP = 0;                    // unit rows lopped off the top; 0 frames the
-                                   // whole device, orb and status LEDs included
-const UW = 160, UH = PH + 1 - CROP;
-const GW = UW * S, GH = UH * S;    // grid cells (also canvas pixels)
-
-// Panel footprint and the ridge below are held to the landing animation's
-// artwork exactly, so the device that slides up is the one that opened.
-// The screen wins its room from the controls, never from the silhouette.
-const LPW = 80, RPW = 80;          // panel widths
-const LX = 0, RX = 80;             // panel left edges
-const HC0 = 74.5, HC1 = 85.5;      // hinge barrel straddles the seam
-
-// The diagonal along the top, expressed in each panel's own columns.
-const RIDGE_HI = 30, RIDGE_LO = 18;
-const RIDGE_A = 32, RIDGE_B = 49;  // left panel
-const R_A = 30,  R_B = 47;         // right panel, mirrored
-const CRAD = 5;
-
-const cv = document.getElementById('dex');
-const uiLayer = document.getElementById('uiLayer');
-cv.width = GW; cv.height = GH;
-const ctx = cv.getContext('2d');
-
-const P = {
-  red: '#d93b2b', redLight: '#ef6353', redMid: '#c93324',
-  redDark: '#a3241a', redShade: '#7d1a12', outline: '#100e0e',
-  screen: '#3a3b41',                 // right panel's caption screen
-  screenFace: '#b9bcc0',             // main screen at idle — an unlit LCD
-  screenBezel: '#9fa3a8',
-  chrome: '#eef0f1', chromeDark: '#8f979e',
-  blue: '#6cc0e8', blueDark: '#24617f',
-  yellow: '#e8b93c', yellowDark: '#a9791d',
-  darkPad: '#414f2e',
-  green: '#6ab04c', greenLight: '#8ecb6d',
-  slate: '#4a4a54', slateDark: '#2c2c34',
-  maroon: '#8b2f26',
-  // Recesses. Every pressable control is drawn as an empty socket here; the
-  // cap that fills it is a DOM element, so it can actually travel on press.
-  socket: '#191c21', socketCool: '#1b2730'
-};
-
-// ---------- grid primitives (unit coords, scaled by S) ----------
-// Everything is authored in full panel rows 0..PH; the primitives subtract
-// CROP on the way in, so anything above the crop line falls off the canvas.
-const g = Array.from({length: GH}, () => Array(GW).fill(null));
-
-function px(x, y, c) {
-  const i = Math.round(x), j = Math.round(y);
-  if (i >= 0 && i < GW && j >= 0 && j < GH) g[j][i] = c;
-}
-function set(x, y, w, h, c) {
-  const x0 = Math.round(x * S), y0 = Math.round((y - CROP) * S);
-  const x1 = Math.round((x + w) * S), y1 = Math.round((y + h - CROP) * S);
-  for (let j = y0; j < y1; j++) for (let i = x0; i < x1; i++) px(i, j, c);
-}
-function circle(cx, cy, r, c) {
-  const CX = cx * S, CY = (cy - CROP) * S, R = r * S;
-  for (let j = Math.floor(CY - R); j <= Math.ceil(CY + R); j++)
-    for (let i = Math.floor(CX - R); i <= Math.ceil(CX + R); i++) {
-      const dx = i + 0.5 - CX, dy = j + 0.5 - CY;
-      if (dx * dx + dy * dy <= R * R) px(i, j, c);
-    }
-}
-function roundRect(x, y, w, h, rad, c) {
-  const H = Math.round(h * S);
-  for (let k = 0; k < H; k++) {
-    const d = Math.min(k, H - 1 - k) / S;
-    let ins = 0;
-    if (d < rad) ins = rad - Math.sqrt(Math.max(0, rad * rad - (rad - d) * (rad - d)));
-    const y0 = Math.round((y - CROP) * S) + k;
-    const x0 = Math.round((x + ins) * S), x1 = Math.round((x + w - ins) * S);
-    for (let i = x0; i < x1; i++) px(i, y0, c);
-  }
-}
-function chamferRect(x, y, w, h, cham, c, fromRow) {
-  const H = Math.round(h * S);
-  const k0 = fromRow === undefined ? 0 : Math.round(fromRow * S);
-  for (let k = k0; k < H; k++) {
-    const fb = (H - 1 - k) / S;
-    let cut = 0;
-    if (fb < cham) cut = cham - fb;
-    const y0 = Math.round((y - CROP) * S) + k;
-    const x0 = Math.round((x + cut) * S), x1 = Math.round((x + w) * S);
-    for (let i = x0; i < x1; i++) px(i, y0, c);
-  }
-}
-
-const FONT = {
- 'A':['.###.','#...#','#...#','#####','#...#','#...#','#...#'],
- 'B':['####.','#...#','#...#','####.','#...#','#...#','####.'],
- 'C':['.####','#....','#....','#....','#....','#....','.####'],
- 'D':['####.','#...#','#...#','#...#','#...#','#...#','####.'],
- 'E':['#####','#....','#....','####.','#....','#....','#####'],
- 'F':['#####','#....','#....','####.','#....','#....','#....'],
- 'G':['.####','#....','#....','#.###','#...#','#...#','.###.'],
- 'H':['#...#','#...#','#...#','#####','#...#','#...#','#...#'],
- 'I':['#####','..#..','..#..','..#..','..#..','..#..','#####'],
- 'J':['....#','....#','....#','....#','#...#','#...#','.###.'],
- 'K':['#...#','#..#.','#.#..','##...','#.#..','#..#.','#...#'],
- 'L':['#....','#....','#....','#....','#....','#....','#####'],
- 'M':['#...#','##.##','#.#.#','#.#.#','#...#','#...#','#...#'],
- 'N':['#...#','##..#','##..#','#.#.#','#..##','#..##','#...#'],
- 'O':['.###.','#...#','#...#','#...#','#...#','#...#','.###.'],
- 'P':['####.','#...#','#...#','####.','#....','#....','#....'],
- 'Q':['.###.','#...#','#...#','#...#','#.#.#','#..#.','.##.#'],
- 'R':['####.','#...#','#...#','####.','#.#..','#..#.','#...#'],
- 'S':['.####','#....','#....','.###.','....#','....#','####.'],
- 'T':['#####','..#..','..#..','..#..','..#..','..#..','..#..'],
- 'U':['#...#','#...#','#...#','#...#','#...#','#...#','.###.'],
- 'V':['#...#','#...#','#...#','#...#','#...#','.#.#.','..#..'],
- 'W':['#...#','#...#','#...#','#.#.#','#.#.#','##.##','#...#'],
- 'X':['#...#','#...#','.#.#.','..#..','.#.#.','#...#','#...#'],
- 'Y':['#...#','#...#','.#.#.','..#..','..#..','..#..','..#..'],
- 'Z':['#####','....#','...#.','..#..','.#...','#....','#####'],
- ' ':['.....','.....','.....','.....','.....','.....','.....']
-};
-function textW(str, sc) { return (str.length * 6 - 1) * sc; }
-function textCells(cx, cy, str, sc, color) {
-  let x = cx;
-  for (const ch of str.toUpperCase()) {
-    const gl = FONT[ch];
-    if (gl) for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++)
-      if (gl[r][c] === '#')
-        for (let a = 0; a < sc; a++) for (let b = 0; b < sc; b++)
-          px(x + c * sc + a, cy + r * sc + b, color);
-    x += 6 * sc;
-  }
-}
-function arrow(cx, cy, len, dir, color) {
-  const st = 1 / S;
-  for (let k = 0; k * st <= len; k++) {
-    const d = k * st, h = d * 0.85;
-    if (dir === 'u') set(cx - h, cy + d, h * 2 + st, st, color);
-    if (dir === 'd') set(cx - h, cy - d, h * 2 + st, st, color);
-    if (dir === 'l') set(cx + d, cy - h, st, h * 2 + st, color);
-    if (dir === 'r') set(cx - d, cy - h, st, h * 2 + st, color);
-  }
-}
-
-// ---------- panel silhouettes ----------
-function cornerInset(row, top, bot) {
-  let d = 1e9;
-  if (top) d = Math.min(d, row);
-  if (bot) d = Math.min(d, PH - 1 - row);
-  if (d >= CRAD) return 0;
-  return CRAD - Math.sqrt(Math.max(0, CRAD * CRAD - (CRAD - d) * (CRAD - d)));
-}
-function ridgeRow(c) {              // left panel: tall at the outer edge
-  if (c <= RIDGE_A) return RIDGE_HI;
-  if (c >= RIDGE_B) return RIDGE_LO;
-  return RIDGE_HI - (RIDGE_HI - RIDGE_LO) * (c - RIDGE_A) / (RIDGE_B - RIDGE_A);
-}
-function ridgeRowR(c) {            // right panel: tall at the hinge, notched outward
-  if (c <= R_A) return RIDGE_LO;
-  if (c >= R_B) return RIDGE_HI;
-  return RIDGE_LO + (RIDGE_HI - RIDGE_LO) * (c - R_A) / (R_B - R_A);
-}
-function leftProfile(row) {
-  if (row < 0 || row > PH - 1) return null;
-  const ins = cornerInset(row, true, true);
-  return [ins, LPW - ins];
-}
-function rightProfile(row) {
-  if (row < 0 || row > PH - 1) return null;
-  let last = -1;
-  for (let c = 0; c < RPW; c++) if (ridgeRowR(c) <= row) last = c;
-  if (last < 0) return null;
-  const ins = cornerInset(row, false, true);
-  return [ins, Math.min(last + 1, RPW - ins)];
-}
-
-function fillPanel(ox, prof) {
-  const rows = [];
-  for (let row = 0; row < PH; row++) if (prof(row)) rows.push(row);
-  const r0 = rows[0], r1 = rows[rows.length - 1];
-  for (const row of rows) {
-    const b = prof(row);
-    set(ox + b[0], row, b[1] - b[0], 1, P.red);
-    set(ox + b[0], row, 1.5, 1, P.redLight);
-    set(ox + b[1] - 1.5, row, 1.5, 1, P.redDark);
-    if (row <= r0 + 1.2) set(ox + b[0], row, b[1] - b[0], 1, P.redLight);
-    if (row >= r1 - 1.2) set(ox + b[0], row, b[1] - b[0], 1, P.redDark);
-  }
-  for (const row of rows) {
-    const b = prof(row);
-    set(ox + b[0], row, 0.55, 1, P.outline);
-    set(ox + b[1] - 0.55, row, 0.55, 1, P.outline);
-  }
-  const a = prof(r0), z = prof(r1);
-  if (a) set(ox + a[0], r0, a[1] - a[0], 0.55, P.outline);
-  if (z) set(ox + z[0], r1 + 0.45, z[1] - z[0], 0.55, P.outline);
-}
-
-// ---------- left panel ----------
-const DX = 61, DY = 107.5;   // d-pad centre, in left-panel units
-
-function drawLeft(ox) {
-  fillPanel(ox, leftProfile);
-
-  // the diagonal seam across the top band
-  for (let c = 1; c < LPW - 1; c += 0.25) {
-    const rr = ridgeRow(c);
-    set(ox + c, rr, 0.25, 0.55, P.outline);
-    set(ox + c, rr - 0.5, 0.25, 0.5, P.redLight);
-  }
-
-  // orb and status LEDs — kept at the landing artwork's size and position
-  const OX = ox + 16, OY = 15;
-  circle(OX, OY, 10.4, P.outline);
-  circle(OX, OY, 9.4, P.chrome);
-  circle(OX, OY, 7.6, P.outline);
-  circle(OX, OY, 6.7, P.blueDark);
-  circle(OX - 0.5, OY - 0.7, 5.4, P.blue);
-  circle(OX - 1.9, OY - 2.3, 2.4, '#c5e9fb');
-
-  [[31, '#e0402f'], [37, '#f0c23c'], [43, '#5fae4f']].forEach(function (L) {
-    circle(ox + L[0], 7, 2.7, P.outline);
-    circle(ox + L[0], 7, 1.9, L[1]);
-  });
-
-  // ---- main screen: a rounded LCD with an even white margin around it ----
-  chamferRect(ox + 3, 31, 74, 66, 11, P.outline);
-  chamferRect(ox + 3.8, 31.8, 72.4, 64.4, 10.2, P.chrome);
-
-  roundRect(ox + 9, 37, 62, 47, 3.0, P.outline);
-  roundRect(ox + 9.9, 37.9, 60.2, 45.2, 2.4, P.screenBezel);
-  roundRect(ox + 10.5, 38.5, 59, 44, 2.0, P.screenFace);
-
-  circle(ox + 32, 34, 1.5, '#4a1710');
-  circle(ox + 42, 34, 1.5, '#4a1710');
-  circle(ox + 32, 34, 1.0, '#d0392c');
-  circle(ox + 42, 34, 1.0, '#d0392c');
-  circle(ox + 14, 89, 2.0, '#4a1710');
-  circle(ox + 14, 89, 1.4, '#d0392c');
-  for (let k = 0; k < 5; k++) set(ox + 55, 87.5 + k * 1.5, 15, 0.6, P.chromeDark);
-
-  // ---- controls: sockets only. Each cap is a DOM element sitting in its
-  // hole, so pressing one genuinely moves it down into the case. ----
-  circle(ox + 9, 105, 3.4, P.outline);
-  circle(ox + 9, 105, 2.8, P.socket);
-
-  roundRect(ox + 15, 100, 12, 3.4, 1.7, P.outline);
-  roundRect(ox + 15.4, 100.4, 11.2, 2.6, 1.3, P.socket);
-  roundRect(ox + 28.5, 100, 12, 3.4, 1.7, P.outline);
-  roundRect(ox + 28.9, 100.4, 11.2, 2.6, 1.3, P.socket);
-
-  roundRect(ox + 15, 104.5, 30, 11, 1.2, P.outline);
-  roundRect(ox + 15.5, 105, 29, 10, 1.0, P.socket);
-
-  // The d-pad is a plus-shaped well; its four arms each take their own cap.
-  const dx = ox + DX;
-  set(dx - 2.6, DY - 8.5, 5.2, 17, P.outline);
-  set(dx - 8.5, DY - 2.6, 17, 5.2, P.outline);
-  set(dx - 2.1, DY - 8.0, 4.2, 16, P.socket);
-  set(dx - 8.0, DY - 2.1, 16, 4.2, P.socket);
-  circle(dx, DY, 1.5, P.slate);
-}
-
-// ---------- right panel ----------
-// The right half keeps its footprint but every feature on it shrinks — that's
-// where the main screen's extra rows and columns come from.
-// Seven section keys and three that leave the site. Seven characters is the
-// ceiling — an eighth overruns the key face.
-const KEYS = [['HOME', 'ABOUT', 'WORK', 'TEAMS', 'PROJECT'],
-              ['SKILLS', 'CONTACT', 'RESUME', 'GITHUB', 'SOURCE']];
-const KEY_X = 8, KEY_Y = 60, KEY_W = 12.4, KEY_H = 7.6;
-
-function drawRight(ox) {
-  fillPanel(ox, rightProfile);
-
-  // secondary screen — a caption strip, not a second stage
-  set(ox + 8, 33, 62, 22, P.outline);
-  set(ox + 9, 34, 60, 20, P.screen);
-
-  // Key wells. The labels moved to the DOM caps, where they stay selectable
-  // and ride down with the key when it is pressed.
-  for (let r = 0; r < KEYS.length; r++)
-    for (let c = 0; c < KEYS[r].length; c++) {
-      const x = ox + KEY_X + c * KEY_W, y = KEY_Y + r * KEY_H;
-      set(x, y, KEY_W, KEY_H, P.outline);
-      set(x + 0.45, y + 0.45, KEY_W - 0.9, KEY_H - 0.9, P.socketCool);
-    }
-
-  set(ox + 44, 79, 10, 1.8, P.outline);
-  set(ox + 56, 79, 10, 1.8, P.outline);
-
-  set(ox + 8, 83, 22, 9.5, P.outline);
-  set(ox + 8.7, 83.7, 10.4, 8.1, P.socket);
-  set(ox + 19.5, 83.7, 10.4, 8.1, P.socket);
-
-  circle(ox + 62, 87.5, 3.6, P.outline);
-  circle(ox + 62, 87.5, 3.0, P.socket);
-
-  set(ox + 8, 96, 28, 16, P.outline);
-  set(ox + 8.7, 96.7, 26.6, 14.6, P.socket);
-  set(ox + 40, 96, 28, 16, P.outline);
-  set(ox + 40.7, 96.7, 26.6, 14.6, P.socket);
-}
-
-// ---------- hinge barrel ----------
-function drawHinge(c0, c1, r0, r1) {
-  const w = c1 - c0;
-  const shades = ['#7d1a12', '#a3241a', '#c93324', P.red, '#e8564a', '#ef6353',
-                  '#e8564a', P.red, '#c93324', '#a3241a', '#7d1a12'];
-  for (let k = 0; k < shades.length; k++) {
-    const x = c0 + (k / shades.length) * w;
-    set(x, r0, w / shades.length + 0.05, r1 - r0, shades[k]);
-  }
-  set(c0, r0, 0.55, r1 - r0, P.outline);
-  set(c1 - 0.55, r0, 0.55, r1 - r0, P.outline);
-  set(c0, r0, w, 0.6, P.outline);
-  set(c0, r1 - 0.6, w, 0.6, P.outline);
-  [r0 + 7, r1 - 8].forEach(function (ry) {
-    set(c0, ry, w, 0.9, P.outline);
-  });
-}
-
-// ---------- compose ----------
-drawLeft(LX);
-drawRight(RX);
-drawHinge(HC0, HC1, RIDGE_LO, PH);
-
-function postProcess(img) {
-  const d = img.data, W = GW, H = GH, N = W * H;
-  const mask = new Float32Array(N);
-  for (let i = 0; i < N; i++) {
-    const o = i * 4;
-    if (d[o + 3] === 0) { mask[i] = 1; continue; }
-    const lum = d[o] * 0.3 + d[o + 1] * 0.59 + d[o + 2] * 0.11;
-    mask[i] = lum < 48 ? 1 : 0;
-  }
-  const R = 4, span = 2 * R + 1;
-  const tmp = new Float32Array(N), ao = new Float32Array(N);
-  const cl = (v, m) => v < 0 ? 0 : (v > m ? m : v);
-  for (let y = 0; y < H; y++) {
-    let acc = 0;
-    for (let k = -R; k <= R; k++) acc += mask[y * W + cl(k, W - 1)];
-    for (let x = 0; x < W; x++) {
-      tmp[y * W + x] = acc / span;
-      acc += mask[y * W + cl(x + R + 1, W - 1)] - mask[y * W + cl(x - R, W - 1)];
-    }
-  }
-  for (let x = 0; x < W; x++) {
-    let acc = 0;
-    for (let k = -R; k <= R; k++) acc += tmp[cl(k, H - 1) * W + x];
-    for (let y = 0; y < H; y++) {
-      ao[y * W + x] = acc / span;
-      acc += tmp[cl(y + R + 1, H - 1) * W + x] - tmp[cl(y - R, H - 1) * W + x];
-    }
-  }
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const i = y * W + x, o = i * 4;
-      if (d[o + 3] === 0) continue;
-      // Lighter touch than before: more outlines now sit close together, and a
-      // heavy occlusion pass turns those clusters to mush.
-      let k = 1.06 - 0.13 * (y / H) - 0.03 * Math.abs(x / W - 0.42);
-      k *= 1 - Math.min(0.17, ao[i] * 0.36);
-      for (let c = 0; c < 3; c++) {
-        const v = d[o + c] * k;
-        d[o + c] = v < 0 ? 0 : (v > 255 ? 255 : v);
-      }
-    }
-  }
-}
-
-const img = ctx.createImageData(GW, GH);
-for (let j = 0; j < GH; j++)
-  for (let i = 0; i < GW; i++) {
-    const c = g[j][i];
-    const o = (j * GW + i) * 4;
-    if (!c) { img.data[o + 3] = 0; continue; }
-    img.data[o]     = parseInt(c.slice(1, 3), 16);
-    img.data[o + 1] = parseInt(c.slice(3, 5), 16);
-    img.data[o + 2] = parseInt(c.slice(5, 7), 16);
-    img.data[o + 3] = 255;
-  }
-postProcess(img);
-ctx.putImageData(img, 0, 0);
-
-// ---------- interaction API ----------
-// Every region below is in UNIT space (the same coords the artwork is drawn in).
-// DEX_UI.rect(name) converts one to viewport pixels so you can absolutely
-// position an HTML element on top of it.
-const REGIONS = {};
-(function buildRegions() {
-  // Regions describe the SOCKET, not the outer cell, so a DOM cap dropped on
-  // one lands inside the well rather than straddling its rim.
-  for (let r = 0; r < KEYS.length; r++)
-    for (let c = 0; c < KEYS[r].length; c++)
-      REGIONS['key:' + KEYS[r][c]] =
-        { x: RX + KEY_X + c * KEY_W + 0.45, y: KEY_Y + r * KEY_H + 0.45,
-          w: KEY_W - 0.9, h: KEY_H - 0.9, label: KEYS[r][c] };
-
-  REGIONS['screen:left']   = { x: LX + 10.5, y: 38.5, w: 59, h: 44 };
-  REGIONS['screen:right']  = { x: RX + 9,    y: 34,   w: 60, h: 20 };
-
-  REGIONS['dpad:up']       = { x: LX + DX - 2.6, y: DY - 8.5, w: 5.2, h: 5.9 };
-  REGIONS['dpad:down']     = { x: LX + DX - 2.6, y: DY + 2.6, w: 5.2, h: 5.9 };
-  REGIONS['dpad:left']     = { x: LX + DX - 8.5, y: DY - 2.6, w: 5.9, h: 5.2 };
-  REGIONS['dpad:right']    = { x: LX + DX + 2.6, y: DY - 2.6, w: 5.9, h: 5.2 };
-
-  REGIONS['btn:black']     = { x: LX + 6.2,  y: 102.2, w: 5.6,  h: 5.6 };
-  REGIONS['btn:red']       = { x: LX + 15.4, y: 100.4, w: 11.2, h: 2.6 };
-  REGIONS['btn:blue']      = { x: LX + 28.9, y: 100.4, w: 11.2, h: 2.6 };
-  REGIONS['btn:gold']      = { x: RX + 59,   y: 84.5,  w: 6,    h: 6 };
-  REGIONS['btn:white1']    = { x: RX + 8.7,  y: 83.7,  w: 10.4, h: 8.1 };
-  REGIONS['btn:white2']    = { x: RX + 19.5, y: 83.7,  w: 10.4, h: 8.1 };
-
-  REGIONS['panel:green']   = { x: LX + 15.5, y: 105,   w: 29,   h: 10 };
-  REGIONS['panel:dark1']   = { x: RX + 8.7,  y: 96.7,  w: 26.6, h: 14.6 };
-  REGIONS['panel:dark2']   = { x: RX + 40.7, y: 96.7,  w: 26.6, h: 14.6 };
-})();
-
-let curP = 1, curLeft = 0, curTop = 0;
-
-window.DEX_UI = {
-  regions: REGIONS,
-  // viewport-pixel box for a named region, valid once the slide has settled
-  rect(name) {
-    const r = REGIONS[name];
-    if (!r) return null;
-    return {
-      left:   curLeft + r.x * S * curP,
-      top:    curTop  + (r.y - CROP) * S * curP,   // regions are in full panel rows
-      width:  r.w * S * curP,
-      height: r.h * S * curP
-    };
-  },
-  rects() {
-    const out = {};
-    for (const k in REGIONS) out[k] = this.rect(k);
-    return out;
-  },
-  keys: KEYS,
-  onLayout: null,     // assign a callback; fires after layout/resize
-  replay() { window.PORTFOLIO.enterUI(); }
-};
-
-// ---------- layout + slide-up ----------
-// The entire device is on the canvas, so the orb and status LEDs sweep up
-// through the frame during the slide. Where it settles, the BOTTOM edge is
-// anchored and whatever doesn't fit spills off the top — never off the sides,
-// so the silhouette you watched open is never cut in half.
-let restTop = 0, startTop = 0, revealed = false;
-const CUT = 26;          // unit row the settled frame aims to start at, just
-                         // past the orb — the LEDs land above the fold
-const FIT = 0.98;        // horizontal breathing room
-const BOTTOM_GAP = 12;   // px of dark left under the device
-const MAX_P = 6;         // never upscale past this on very large displays
-function layout() {
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const bandH = (PH + 1 - CUT) * S;                   // cells we want framed
-  const p = Math.min(vh / bandH, vw * FIT / GW, MAX_P);
-  const w = GW * p, h = GH * p;
-  cv.style.width = w + 'px';
-  cv.style.height = h + 'px';
-  cv.style.left = ((vw - w) / 2) + 'px';
-  cv.style.top = '0px';
-  // Tall, narrow windows can hold the whole device; there, centre it instead
-  // of cropping something that already fits.
-  const devH = (PH + 1) * S * p;
-  restTop = devH + BOTTOM_GAP <= vh ? (vh - devH) / 2
-                                    : vh - devH - BOTTOM_GAP;
-  startTop = vh + 20;
-  curP = p;
-  curLeft = (vw - w) / 2;
-  curTop = restTop;
-  if (window.DEX_UI && typeof window.DEX_UI.onLayout === 'function') window.DEX_UI.onLayout();
-}
-
-function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
-const SLIDE_MS = 1000;
-let slideStart = null;
-function slide(ts) {
-  if (!slideStart) slideStart = ts;
-  const t = Math.min((ts - slideStart) / SLIDE_MS, 1);
-  const y = startTop + (restTop - startTop) * easeOutCubic(t);
-  cv.style.transform = 'translateY(' + y + 'px)';
-  if (t < 1) requestAnimationFrame(slide);
-}
-
-window.addEventListener('resize', function () {
-  layout();
-  cv.style.transform = 'translateY(' + (revealed ? restTop : startTop) + 'px)';
-});
-
-// --- handoff points used by the landing scene ---
-window.PORTFOLIO.enterUI = function () {
-  revealed = true;
-  uiLayer.classList.add('on');
-  layout();
-  cv.style.transform = 'translateY(' + startTop + 'px)';
-  slideStart = null;
-  requestAnimationFrame(slide);
-};
-window.PORTFOLIO.resetUI = function () {
-  revealed = false;
-  uiLayer.classList.remove('on');
-  layout();
-  cv.style.transform = 'translateY(' + startTop + 'px)';
-};
-
-// park it below the fold; the landing scene decides when it comes up
-layout();
-cv.style.transform = 'translateY(' + startTop + 'px)';
-
-})();
-</script>
-
 <!-- =====================================================================
      SCENE 1 — the opening animation (was landing.html)
      ===================================================================== -->
@@ -1306,219 +1054,261 @@ resetAll();
 </script>
 
 <!-- =====================================================================
-     SCENE 3 — content and controls
-     The canvas paints sockets; every cap that sits in one is a DOM element,
-     so a press is real travel into the case rather than a tint on flat art.
-     Text stays selectable and crawlable.
+     SCENE 2 — the device: buttons, screens, navigation
      ===================================================================== -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Silkscreen:wght@400;700&display=swap">
 <style>
-  :root {
-    --fd: 'Silkscreen', 'Courier New', monospace;
-    --fb: 'Pixelify Sans', 'Trebuchet MS', sans-serif;
-    --ink: #14171b;
-    --ink-dim: #4a5058;
-    --rule: #7f858d;
+  /* ================================================================ buttons
+     One physical model. A cap is a domed slab sitting on a side wall; pressing
+     drops it by the wall height, squashes it into its own base, and flips the
+     dome so the light lands on the wrong side.
+     ====================================================================== */
+  .btn {
+    position: relative;
+    appearance: none; margin: 0; border: 0; padding: 0;
+    cursor: pointer;
+    font-family: var(--fd); font-weight: 600; line-height: 1;
+    color: var(--label, #fff);
+    display: inline-flex; align-items: center; justify-content: center;
+    transform-origin: 50% 100%;
+    background:
+      linear-gradient(180deg, var(--hi) 0%, var(--face) 46%, var(--lo) 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(0,0,0,0.28),
+      inset 0 2px 1px rgba(255,255,255,0.55),
+      inset 0 -4px 6px rgba(0,0,0,0.28),
+      0 var(--lift, 7px) 0 var(--side),
+      0 calc(var(--lift, 7px) + 1px) 0 rgba(0,0,0,0.5),
+      0 calc(var(--lift, 7px) + 6px) 12px rgba(0,0,0,0.45);
+    transition: transform 80ms cubic-bezier(.2,.8,.3,1),
+                box-shadow 80ms ease, background 150ms ease, filter 150ms ease;
+    will-change: transform;
   }
-
-  #dexLayer {
-    position: fixed; inset: 0; z-index: 5;
+  .btn::after {
+    content: ""; position: absolute; left: 8%; right: 8%; top: 5%; height: 36%;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0));
     pointer-events: none;
-    opacity: 0; transition: opacity 340ms ease;
   }
-  #dexLayer.on { opacity: 1; }
+  .btn:hover { filter: brightness(1.09) saturate(1.05); }
+  .btn:active, .btn.press {
+    transform: translateY(var(--lift, 7px)) scaleY(0.93);
+    background: linear-gradient(180deg, var(--lo) 0%, var(--face) 78%);
+    box-shadow:
+      inset 0 0 0 1px rgba(0,0,0,0.40),
+      inset 0 5px 10px rgba(0,0,0,0.55),
+      0 0 0 var(--side);
+    filter: brightness(0.9);
+  }
+  .btn:active::after, .btn.press::after { opacity: 0.25; }
+  .btn:focus-visible { outline: 3px solid var(--amber); outline-offset: 4px; }
 
-  #screenMain, #screenSide, .cap { position: fixed; pointer-events: auto; }
+  @keyframes fireFlare {
+    0%   { filter: brightness(1.9) saturate(1.35); }
+    100% { filter: brightness(1) saturate(1); }
+  }
+  .btn.fired, .tile.fired { animation: fireFlare 320ms ease-out; }
 
-  /* ---------------------------------------------------------- main screen */
+  /* -------------------------------------------------------------- variants */
+  .btn.round { border-radius: 50%; width: 58px; height: 58px; }
+  .btn.round.black { --face:#33333d; --hi:#5c5c6b; --lo:#191920; --side:#0c0c11; }
+  .btn.round.gold  { --face:#e7b53a; --hi:#ffe99a; --lo:#a87c14; --side:#6d4d08; }
+
+  .btn.pill { border-radius: 999px; width: 128px; height: 28px; --lift: 5px; }
+  .btn.pill.red  { --face:#c8402e; --hi:#f2806d; --lo:#8c2415; --side:#5d160c; }
+  .btn.pill.blue { --face:#3f96d6; --hi:#8fd0f5; --lo:#215f92; --side:#143f63; }
+
+  .btn.white {
+    width: 96px; height: 54px; border-radius: 9px; font-size: 18px;
+    --face:#eceff1; --hi:#ffffff; --lo:#b6bec4; --side:#818b92; --label:#2c333a;
+  }
+
+  .btn.greenpad {
+    width: 100%; height: 92px; border-radius: 10px;
+    --face:#5f9f45; --hi:#9ddc7e; --lo:#3a6a29; --side:#27491b; --label:#10280b;
+    display: flex; gap: 10px; align-items: baseline; justify-content: center;
+  }
+  .greenpad .idx { font-size: 40px; font-weight: 700; letter-spacing: 0.02em; }
+  .greenpad .of  { font-size: 17px; opacity: 0.68; }
+
+  /* ------------------------------------------------------------------ keys */
+  .key {
+    height: 66px; border-radius: 9px;
+    font-size: 15px; letter-spacing: 0.05em;
+    --face:#3f9fd8; --hi:#8ed4f6; --lo:#20618f; --side:#154566; --label:#06283f;
+    --lift: 7px;
+  }
+  .key.link { --face:#4bb69c; --hi:#95e4d0; --lo:#227162; --side:#124e43; --label:#052e27; }
+  .key.on   { --face:#f0be3e; --hi:#ffe79c; --lo:#a97f13; --side:#71520a; --label:#2f2205; }
+  .key::before {
+    content: ""; position: absolute; inset: -4px; border-radius: 12px;
+    border: 2px solid transparent; pointer-events: none;
+    transition: border-color 160ms ease;
+  }
+  .key.on::before { border-color: #fff3cd; animation: ring 1.5s ease-in-out infinite; }
+  @keyframes ring { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+  /* ----------------------------------------------------------------- tiles */
+  .tile {
+    position: relative;
+    height: 118px; border-radius: 10px;
+    text-decoration: none;
+    display: flex; flex-direction: column; justify-content: center; gap: 8px;
+    padding: 0 20px;
+    background: linear-gradient(180deg, #5d6f46 0%, #47572f 48%, #313d1f 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(0,0,0,0.35),
+      inset 0 2px 1px rgba(255,255,255,0.28),
+      0 7px 0 #222b14,
+      0 8px 0 rgba(0,0,0,0.5),
+      0 13px 14px rgba(0,0,0,0.45);
+    transform-origin: 50% 100%;
+    transition: transform 80ms cubic-bezier(.2,.8,.3,1), box-shadow 80ms ease, filter 150ms;
+  }
+  .tile:hover { filter: brightness(1.1); }
+  .tile:active {
+    transform: translateY(7px) scaleY(0.95);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4), inset 0 5px 10px rgba(0,0,0,0.55), 0 0 0 #222b14;
+  }
+  .tile .tag {
+    font-family: var(--fm); font-size: 11px; letter-spacing: 0.16em;
+    color: #b6cb9c; text-transform: uppercase;
+  }
+  .tile .name { font-family: var(--fd); font-weight: 600; font-size: 19px; color: #f2f8ea; }
+
+  /* ============================================================ the D-pad
+     One moulded cross on a pivot. Pressing an arm tips the whole plate toward
+     that arm — it is a single piece, not four buttons.
+     ====================================================================== */
+  .dpad {
+    position: relative;
+    width: 168px; height: 168px;
+    perspective: 420px;
+    justify-self: end;
+  }
+  .dpad-plate {
+    position: absolute; inset: 0;
+    transform-style: preserve-3d;
+    transition: transform 110ms cubic-bezier(.25,.85,.35,1);
+    clip-path: polygon(34% 0, 66% 0, 66% 34%, 100% 34%, 100% 66%,
+                       66% 66%, 66% 100%, 34% 100%, 34% 66%, 0 66%, 0 34%, 34% 34%);
+    background:
+      radial-gradient(58% 58% at 50% 34%, #6a6a78 0%, #4b4b57 46%, #33333d 78%, #23232b 100%);
+    box-shadow:
+      inset 0 2px 1px rgba(255,255,255,0.30),
+      inset 0 -4px 8px rgba(0,0,0,0.55);
+    filter: drop-shadow(0 8px 0 #15151b) drop-shadow(0 11px 12px rgba(0,0,0,0.55));
+  }
+  .dpad-plate.up    { transform: rotateX(13deg)  translateY(2px); }
+  .dpad-plate.down  { transform: rotateX(-13deg) translateY(-2px); }
+  .dpad-plate.left  { transform: rotateY(-13deg) translateX(2px); }
+  .dpad-plate.right { transform: rotateY(13deg)  translateX(-2px); }
+
+  .dpad .ar {
+    position: absolute; color: #9a9aa8; font-size: 15px; line-height: 1;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+  }
+  .dpad .ar.u { top: 9px;    left: 50%; transform: translateX(-50%); }
+  .dpad .ar.d { bottom: 9px; left: 50%; transform: translateX(-50%); }
+  .dpad .ar.l { left: 9px;   top: 50%;  transform: translateY(-50%); }
+  .dpad .ar.r { right: 9px;  top: 50%;  transform: translateY(-50%); }
+  .dpad .hub {
+    position: absolute; left: 50%; top: 50%; width: 34px; height: 34px;
+    transform: translate(-50%, -50%); border-radius: 50%;
+    background: radial-gradient(circle at 40% 34%, #55555f, #2a2a33 70%);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.65);
+  }
+
+  .dpad .dz {
+    position: absolute; appearance: none; background: transparent; border: 0;
+    padding: 0; cursor: pointer; z-index: 2;
+  }
+  .dpad .dz:focus-visible { outline: 3px solid var(--amber); outline-offset: -3px; border-radius: 6px; }
+  .dpad .dz.u { left: 34%; top: 0;    width: 32%; height: 40%; }
+  .dpad .dz.d { left: 34%; bottom: 0; width: 32%; height: 40%; }
+  .dpad .dz.l { top: 34%;  left: 0;   height: 32%; width: 40%; }
+  .dpad .dz.r { top: 34%;  right: 0;  height: 32%; width: 40%; }
+
+  /* ============================================================== screens */
   #screenMain {
+    position: absolute; inset: 0; z-index: 2;
     overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
-    color: var(--ink); font-family: var(--fb); line-height: 1.5;
-    transition: background-color 180ms ease, color 180ms ease;
+    padding: 24px 28px 30px;
+    color: #cfe6d4; font-family: var(--fb); font-size: 15.5px; line-height: 1.62;
+    transition: color 200ms ease;
   }
   #screenMain::-webkit-scrollbar { display: none; }
-  #screenMain .pad { padding: 1.1em 1.3em 1.6em; }
+  .glass.lit { background: linear-gradient(170deg, #16301c 0%, var(--glass-lit) 45%, #061109 100%); }
+  .glass.lit #screenMain { color: #e6fbe6; }
 
   .eyebrow {
-    font-family: var(--fd); font-size: 0.62em; letter-spacing: 0.14em;
-    color: var(--ink-dim); display: flex; justify-content: space-between; gap: 1em;
-    border-bottom: 2px solid var(--rule); padding-bottom: 0.5em; margin-bottom: 0.9em;
+    display: flex; justify-content: space-between; gap: 16px;
+    font-family: var(--fm); font-size: 11px; letter-spacing: 0.18em;
+    color: #6f8f78; text-transform: uppercase;
+    border-bottom: 1px solid rgba(140,190,150,0.28);
+    padding-bottom: 10px; margin-bottom: 18px;
   }
-  .lead { font-family: var(--fd); font-size: 1.15em; line-height: 1.3; margin: 0 0 0.35em; }
-  .sublead { font-size: 0.95em; color: var(--ink-dim); margin: 0 0 1em; }
+  .lead {
+    font-family: var(--fd); font-weight: 700; font-size: 27px; line-height: 1.16;
+    letter-spacing: 0.01em; color: #f2fff0; margin: 0 0 8px;
+  }
+  .sublead { color: #9cbda4; margin: 0 0 18px; font-size: 15px; }
 
-  .blk { margin-bottom: 1.2em; }
+  .blk { margin-bottom: 22px; }
   .blk:last-child { margin-bottom: 0; }
-  .blk h3 { font-family: var(--fd); font-size: 0.86em; line-height: 1.35; margin: 0 0 0.2em; }
-  .blk .role { font-size: 0.95em; margin: 0; }
+  .blk h3 { font-family: var(--fd); font-weight: 600; font-size: 18px; margin: 0 0 3px; color: #eafbe8; }
+  .blk .role { margin: 0; font-size: 15px; color: #d2e9d6; }
   .blk .when {
-    font-family: var(--fd); font-size: 0.58em; letter-spacing: 0.1em;
-    color: var(--ink-dim); margin: 0.25em 0 0.55em;
+    font-family: var(--fm); font-size: 11.5px; letter-spacing: 0.09em;
+    color: #6f8f78; margin: 5px 0 10px;
   }
 
   .bul { list-style: none; margin: 0; padding: 0; }
-  .bul li { position: relative; padding-left: 1.1em; margin-bottom: 0.4em; font-size: 0.92em; }
+  .bul li { position: relative; padding-left: 18px; margin-bottom: 8px; font-size: 14.5px; }
   .bul li::before {
-    content: ""; position: absolute; left: 0; top: 0.55em;
-    width: 0.34em; height: 0.34em; background: var(--ink-dim);
+    content: ""; position: absolute; left: 0; top: 9px;
+    width: 6px; height: 6px; border-radius: 2px; background: #5f9f6a;
   }
 
-  .rows { display: grid; gap: 0.6em; margin: 0; }
-  .rows div { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 0.8em; }
+  .rows { display: grid; gap: 13px; margin: 0; }
+  .rows div { display: grid; grid-template-columns: 132px minmax(0,1fr); gap: 16px; }
   .rows dt {
-    font-family: var(--fd); font-size: 0.58em; letter-spacing: 0.1em;
-    color: var(--ink-dim); padding-top: 0.35em;
+    font-family: var(--fm); font-size: 11px; letter-spacing: 0.14em;
+    color: #6f8f78; padding-top: 4px; text-transform: uppercase;
   }
-  .rows dd { margin: 0; font-size: 0.95em; }
+  .rows dd { margin: 0; font-size: 15px; }
 
-  #screenMain a { color: #123a63; text-decoration: none; border-bottom: 2px solid #6d90b4; }
-  #screenMain a:hover { border-bottom-color: #123a63; }
+  #screenMain a { color: #8fe0ff; text-decoration: none; border-bottom: 1px solid rgba(143,224,255,0.45); }
+  #screenMain a:hover { border-bottom-color: #8fe0ff; }
 
   .note {
-    font-size: 0.86em; color: var(--ink-dim);
-    border-top: 2px solid var(--rule); margin-top: 1.1em; padding-top: 0.7em;
+    font-size: 14px; color: #8dae95;
+    border-top: 1px solid rgba(140,190,150,0.28); margin-top: 20px; padding-top: 13px;
   }
 
-  /* Backlight — the round black button drives this. */
-  #screenMain.lit { background: #16210f; color: #d9f2cb; }
-  #screenMain.lit .eyebrow,
-  #screenMain.lit .sublead,
-  #screenMain.lit .when,
-  #screenMain.lit .rows dt,
-  #screenMain.lit .note { color: #87a978; }
-  #screenMain.lit .eyebrow { border-bottom-color: #465a3c; }
-  #screenMain.lit .note { border-top-color: #465a3c; }
-  #screenMain.lit .bul li::before { background: #87a978; }
-  #screenMain.lit a { color: #a8e6ff; border-bottom-color: #4d7f97; }
-
-  /* ---------------------------------------------------------- side screen */
-  #screenSide {
-    display: flex; flex-direction: column; justify-content: center; gap: 0.35em;
-    padding: 0 1.1em; color: #cfe3c6; font-family: var(--fb); overflow: hidden;
-  }
-  #screenSide .who { font-family: var(--fd); font-size: 1.05em; color: #eaf6e4; }
-  #screenSide .what { font-size: 0.92em; color: #9fb89a; }
+  #screenSide .who { font-family: var(--fd); font-weight: 700; font-size: 23px; color: #eafbe8; }
+  #screenSide .what { font-size: 14px; color: #93b59b; }
   #screenSide .where {
-    font-family: var(--fd); font-size: 0.62em; letter-spacing: 0.12em; color: #7fd06a;
+    font-family: var(--fm); font-size: 12px; letter-spacing: 0.13em; color: #79d06a;
+    text-transform: uppercase;
   }
-  #screenSide .where.link { color: #ffd45e; }
-
-  /* =================================================================== caps
-     One physical model for every control. The face is a top-lit dome, and the
-     `0 var(--lift) 0 var(--side)` shadow is the extruded side wall beneath it.
-     Pressing drops the slab by exactly that height, squashes it slightly into
-     its own base, darkens the dome, and collapses the wall to nothing — so the
-     cap bottoms out in the socket the canvas painted.
-     ==================================================================== */
-  .cap {
-    appearance: none;
-    margin: 0; padding: 0; border: 0;
-    cursor: pointer;
-    color: var(--label);
-    font-family: var(--fd);
-    line-height: 1;
-    display: flex; align-items: center; justify-content: center;
-    text-align: center; text-decoration: none; white-space: nowrap;
-    border-radius: 2px;
-    transform-origin: 50% 100%;
-    background: linear-gradient(180deg, var(--hi) 0%, var(--face) 48%, var(--lo) 100%);
-    box-shadow:
-      inset 0 0 0 1.5px rgba(0, 0, 0, 0.30),
-      inset 0 2px 0 rgba(255, 255, 255, 0.45),
-      inset 0 -3px 0 rgba(0, 0, 0, 0.22),
-      0 var(--lift) 0 var(--side),
-      0 calc(var(--lift) + 1.5px) 0 rgba(0, 0, 0, 0.55),
-      0 calc(var(--lift) + 5px) 9px rgba(0, 0, 0, 0.50);
-    transition: transform 70ms cubic-bezier(.2, .8, .3, 1),
-                box-shadow 70ms ease,
-                background 130ms ease,
-                filter 130ms ease;
-    will-change: transform;
-  }
-
-  .cap:hover { filter: brightness(1.12) saturate(1.06); }
-
-  .cap:active, .cap.press {
-    transform: translateY(var(--lift)) scaleY(0.94);
-    background: linear-gradient(180deg, var(--lo) 0%, var(--face) 72%, var(--face) 100%);
-    box-shadow:
-      inset 0 0 0 1.5px rgba(0, 0, 0, 0.40),
-      inset 0 4px 9px rgba(0, 0, 0, 0.55),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.06),
-      0 0 0 var(--side);
-    filter: brightness(0.88);
-  }
-  .cap:focus-visible { outline: 3px solid #ffd23f; outline-offset: 4px; }
-
-  /* A fired control flares once, so a keyboard press reads as an action and
-     not just a wiggle. */
-  @keyframes capFire {
-    0%   { filter: brightness(1.85) saturate(1.3); }
-    100% { filter: brightness(1) saturate(1); }
-  }
-  .cap.fired { animation: capFire 300ms ease-out; }
-
-  /* The D-pad cursor sits on one key at a time and breathes so you can find it. */
-  .cap::after {
-    content: "";
-    position: absolute; inset: -3px;
-    border-radius: inherit;
-    border: 2px solid transparent;
-    pointer-events: none;
-    transition: border-color 140ms ease;
-  }
-  .cap[aria-current="true"]::after {
-    border-color: #fff4cf;
-    animation: capRing 1500ms ease-in-out infinite;
-  }
-  @keyframes capRing { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
-
-  .cap.round { border-radius: 50%; }
-  .cap.pill  { border-radius: 999px; }
-  .cap.glyph { font-family: system-ui, 'Segoe UI Symbol', sans-serif; }
-  .cap.stack {
-    flex-direction: column; align-items: flex-start; justify-content: center;
-    gap: 0.3em; padding: 0 0.85em; white-space: normal;
-  }
-  .cap .tag { font-size: 0.62em; letter-spacing: 0.12em; opacity: 0.72; }
-  .cap .name { font-size: 0.92em; line-height: 1.25; }
-  .cap .idx { font-size: 1.6em; letter-spacing: 0.04em; }
-  .cap .of  { font-size: 0.75em; opacity: 0.72; }
+  #screenSide .where.link { color: var(--amber); }
 
   /* -------------------------------------------------- plain-text fallback */
   #hatch {
-    position: fixed; left: 22px; bottom: 22px; z-index: 15;
-    font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
-    font-size: 12px; line-height: 1.9; color: #6d6d78;
+    position: fixed; left: 24px; bottom: 22px; z-index: 15;
+    font-family: var(--fm); font-size: 12px; line-height: 1.9; color: #6f6f7c;
   }
-  #hatch b { color: #b9b9c6; font-weight: 600; }
-  #hatch a { color: #b9b9c6; text-decoration: none; border-bottom: 1px solid #45454f; }
+  #hatch b { color: #c2c2ce; font-weight: 600; }
+  #hatch a { color: #c2c2ce; text-decoration: none; border-bottom: 1px solid #3d3d47; }
   #hatch a:hover { color: #fff; border-bottom-color: #fff; }
-  #hatch .sep { color: #45454f; margin: 0 6px; }
+  #hatch .sep { color: #3d3d47; margin: 0 7px; }
 
   @media (prefers-reduced-motion: reduce) {
-    #dexLayer, .cap { transition: none; }
-    .cap.fired { animation: none; }
-    .cap[aria-current="true"]::after { animation: none; opacity: 1; }
+    .btn, .tile, .dpad-plate, #uiLayer { transition: none; }
+    .btn.fired, .tile.fired, .key.on::before { animation: none; }
   }
-  @media (max-width: 760px) {
-    #hatch { font-size: 11px; left: 14px; bottom: 14px; }
-  }
+  @media (max-width: 760px) { #hatch { font-size: 11px; left: 14px; bottom: 14px; } }
 </style>
-
-<div id="dexLayer">
-  <section id="screenMain" tabindex="0" aria-label="Dex entry"></section>
-  <aside id="screenSide" aria-hidden="true"></aside>
-  <nav id="controls" aria-label="Dex controls"></nav>
-</div>
-
-<footer id="hatch">
-  <b>Daniel Wang</b><span class="sep">/</span>Computer Engineering, UBC 2028<br>
-  <a href="./Daniel_Wang_Resume.pdf">Resume</a><span class="sep">·</span><a
-     href="https://github.com/deewang">GitHub</a><span class="sep">·</span><a
-     href="https://linkedin.com/in/daniel-wang77">LinkedIn</a><span class="sep">·</span><a
-     href="mailto:daniel.yuewang@gmail.com">daniel.yuewang@gmail.com</a>
-</footer>
 
 <script>
 (function () {
@@ -1531,11 +1321,11 @@ const SECTIONS = {
     lead: 'DANIEL WANG',
     sublead: 'Computer Engineering at UBC, class of 2028. Embedded firmware that has to survive a race car, and web apps that have to survive a demo.',
     rows: [
-      ['CURRENTLY', 'RF Software Developer Co-op at NETGEAR'],
-      ['TEAM', 'Formula Racing SAE — Electrical Subteam'],
-      ['BASED', 'Vancouver, BC']
+      ['Currently', 'RF Software Developer Co-op at NETGEAR'],
+      ['Team', 'Formula Racing SAE — Electrical Subteam'],
+      ['Based', 'Vancouver, BC']
     ],
-    note: 'The D-pad moves the cursor across all ten keys. Red opens whatever it is sitting on, blue goes home, the white buttons page this screen, the round black button turns on the backlight, and the gold one jumps to contact.'
+    note: 'The D-pad is one piece — press an arm and the whole cross tips that way. It moves the cursor across all ten keys. Red opens whatever it is sitting on, blue comes back here, the white buttons page this screen, black is the backlight, gold jumps to contact.'
   },
 
   ABOUT: {
@@ -1543,9 +1333,9 @@ const SECTIONS = {
     lead: 'UNIVERSITY OF BRITISH COLUMBIA',
     sublead: 'Bachelor of Applied Science — Computer Engineering',
     rows: [
-      ['GRADUATES', '2028'],
-      ['HONOURS', 'Dean’s List, 2024–2025'],
-      ['FOCUS', 'Embedded systems, test automation, full-stack web']
+      ['Graduates', '2028'],
+      ['Honours', 'Dean’s List, 2024–2025'],
+      ['Focus', 'Embedded systems, test automation, full-stack web']
     ]
   },
 
@@ -1627,9 +1417,9 @@ const SECTIONS = {
   SKILLS: {
     no: 6, kind: 'SKILLS',
     rows: [
-      ['LANGUAGES', 'Python, Java, JavaScript, C, C++, Verilog, MATLAB'],
-      ['DATA & TOOLS', 'React, Pytest, Git, Jira, Agile, PostgreSQL, MySQL, Firestore'],
-      ['EMBEDDED', 'STM32, RTOS, ADC, DMA, CAN Bus, UART']
+      ['Languages', 'Python, Java, JavaScript, C, C++, Verilog, MATLAB'],
+      ['Data & tools', 'React, Pytest, Git, Jira, Agile, PostgreSQL, MySQL, Firestore'],
+      ['Embedded', 'STM32, RTOS, ADC, DMA, CAN Bus, UART']
     ]
   },
 
@@ -1638,100 +1428,70 @@ const SECTIONS = {
     lead: 'GET IN TOUCH',
     sublead: 'Open to Summer 2027 co-op and internship roles.',
     rows: [
-      ['EMAIL', '<a href="mailto:daniel.yuewang@gmail.com">daniel.yuewang@gmail.com</a>'],
-      ['LINKEDIN', '<a href="https://linkedin.com/in/daniel-wang77">daniel-wang77</a>'],
-      ['GITHUB', '<a href="https://github.com/deewang">deewang</a>'],
-      ['SITE', '<a href="https://deewang.github.io/">deewang.github.io</a>']
+      ['Email', '<a href="mailto:daniel.yuewang@gmail.com">daniel.yuewang@gmail.com</a>'],
+      ['LinkedIn', '<a href="https://linkedin.com/in/daniel-wang77">daniel-wang77</a>'],
+      ['GitHub', '<a href="https://github.com/deewang">deewang</a>'],
+      ['Site', '<a href="https://deewang.github.io/">deewang.github.io</a>']
     ],
     note: 'Phone number is on the resume PDF rather than here, to keep it off a public page.'
   }
 };
 
+const GRID = [['HOME', 'ABOUT', 'WORK', 'TEAMS', 'PROJECT'],
+              ['SKILLS', 'CONTACT', 'RESUME', 'GITHUB', 'SOURCE']];
 const ORDER = ['HOME', 'ABOUT', 'WORK', 'TEAMS', 'PROJECT', 'SKILLS', 'CONTACT'];
-
 const LINKS = {
   RESUME: './Daniel_Wang_Resume.pdf',
   GITHUB: 'https://github.com/deewang',
   SOURCE: 'https://github.com/deewang/deewang.github.io'
 };
-
-// Base face colour per control; the dome highlight and shade are derived.
-const SKIN = {
-  key:   { face: '#6cc0e8', side: '#24617f', label: '#0c3350' },
-  keyOn: { face: '#ffd45e', side: '#a9791d', label: '#3a2a06' },
-  link:  { face: '#7fd0bd', side: '#2c7268', label: '#093a32' },
-  red:   { face: '#c8503f', side: '#6d211a', label: '#ffdcd6' },
-  blue:  { face: '#4a9ed8', side: '#22557a', label: '#eaf6ff' },
-  white: { face: '#eef0f1', side: '#98a1a8', label: '#2b3138' },
-  black: { face: '#32323c', side: '#131319', label: '#c9c9d4' },
-  gold:  { face: '#e8b93c', side: '#8d6314', label: '#3d2a05' },
-  green: { face: '#6ab04c', side: '#3a6a28', label: '#123009' },
-  pad:   { face: '#55663f', side: '#2b361d', label: '#e9f5dc' },
-  dpad:  { face: '#565662', side: '#24242c', label: '#cfcfda' }
-};
+const TILES = [
+  { tag: 'Project',  name: 'Dr. Pocket ↗', href: 'https://drpocket.org/' },
+  { tag: 'Firmware', name: 'Strain Gauge ↗', href: 'https://github.com/deewang/Formula-Strain-Gauge-Sensor' }
+];
 
 // ------------------------------------------------------------------ helpers
 const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const pad3 = n => String(n).padStart(3, '0');
 const pad2 = n => String(n).padStart(2, '0');
+const $ = s => document.querySelector(s);
 
-function shade(hex, amt) {
-  const n = parseInt(hex.slice(1), 16);
-  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-    .map(v => Math.max(0, Math.min(255, Math.round(v + amt))));
-  return '#' + ((1 << 24) | (ch[0] << 16) | (ch[1] << 8) | ch[2]).toString(16).slice(1);
-}
+const uiLayer = $('#uiLayer');
+const stage   = $('#stage');
+const main    = $('#screenMain');
+const side    = $('#screenSide');
+const glass   = main.parentElement;
+const keypad  = $('#keypad');
+const tileBox = $('#tiles');
+const plate   = $('.dpad-plate');
+const greenEl = $('.btn.greenpad');
 
-function skin(el, s) {
-  el.style.setProperty('--face', s.face);
-  el.style.setProperty('--hi', shade(s.face, 38));
-  el.style.setProperty('--lo', shade(s.face, -30));
-  el.style.setProperty('--side', s.side);
-  el.style.setProperty('--label', s.label);
-}
-
-const layer = document.getElementById('dexLayer');
-const main  = document.getElementById('screenMain');
-const side  = document.getElementById('screenSide');
-const rack  = document.getElementById('controls');
-
-const GRID = DEX_UI.keys;                 // [[5 labels], [5 labels]]
-let active = 'HOME';                      // section on screen
-let cur = { r: 0, c: 0 };                 // D-pad cursor across the keypad
-
+let active = 'HOME';
+let cur = { r: 0, c: 0 };
 const at = () => GRID[cur.r][cur.c];
 
 // ------------------------------------------------------------------ render
 function renderMain() {
   const s = SECTIONS[active];
-  let html = '<div class="pad">';
-  html += '<div class="eyebrow"><span>Nº ' + pad3(s.no) + '</span><span>' + esc(s.kind) + '</span></div>';
-  if (s.lead)    html += '<p class="lead">' + esc(s.lead) + '</p>';
-  if (s.sublead) html += '<p class="sublead">' + esc(s.sublead) + '</p>';
-
+  let h = '<div class="eyebrow"><span>No. ' + pad3(s.no) + '</span><span>' + esc(s.kind) + '</span></div>';
+  if (s.lead)    h += '<p class="lead">' + esc(s.lead) + '</p>';
+  if (s.sublead) h += '<p class="sublead">' + esc(s.sublead) + '</p>';
   if (s.rows) {
-    html += '<dl class="rows">';
+    h += '<dl class="rows">';
     // Row values may carry anchors on purpose, so they are not escaped.
-    s.rows.forEach(r => { html += '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>'; });
-    html += '</dl>';
+    s.rows.forEach(r => { h += '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>'; });
+    h += '</dl>';
   }
-
-  if (s.blocks) {
-    s.blocks.forEach(function (b) {
-      html += '<div class="blk">';
-      html += '<h3>' + (b.href
-        ? '<a href="' + esc(b.href) + '" target="_blank" rel="noopener">' + esc(b.title) + ' ↗</a>'
-        : esc(b.title)) + '</h3>';
-      if (b.role) html += '<p class="role">' + esc(b.role) + '</p>';
-      if (b.when) html += '<p class="when">' + esc(b.when) + '</p>';
-      html += '<ul class="bul">' + b.bullets.map(l => '<li>' + esc(l) + '</li>').join('') + '</ul>';
-      html += '</div>';
-    });
-  }
-
-  if (s.note) html += '<p class="note">' + esc(s.note) + '</p>';
-  html += '</div>';
-  main.innerHTML = html;
+  if (s.blocks) s.blocks.forEach(function (b) {
+    h += '<div class="blk"><h3>' + (b.href
+      ? '<a href="' + esc(b.href) + '" target="_blank" rel="noopener">' + esc(b.title) + ' ↗</a>'
+      : esc(b.title)) + '</h3>';
+    if (b.role) h += '<p class="role">' + esc(b.role) + '</p>';
+    if (b.when) h += '<p class="when">' + esc(b.when) + '</p>';
+    h += '<ul class="bul">' + b.bullets.map(l => '<li>' + esc(l) + '</li>').join('') + '</ul></div>';
+  });
+  if (s.note) h += '<p class="note">' + esc(s.note) + '</p>';
+  main.innerHTML = h;
   main.scrollTop = 0;
 }
 
@@ -1741,250 +1501,191 @@ function renderSide() {
     '<div class="who">DANIEL WANG</div>' +
     '<div class="what">Computer Engineering · UBC 2028</div>' +
     '<div class="where' + (onLink ? ' link' : '') + '">' +
-      (onLink ? '▸ ' + esc(at()) + ' — RED opens ↗' : '▸ ' + esc(SECTIONS[active].kind)) +
-    '</div>';
+      (onLink ? at() + ' — red opens ↗' : SECTIONS[active].kind) + '</div>';
 }
 
 function renderCounter() {
-  const g = rack.querySelector('[data-region="panel:green"]');
-  if (!g) return;
-  g.innerHTML = '<span class="idx">' + pad2(ORDER.indexOf(active) + 1) + '</span>' +
-                '<span class="of">/ ' + pad2(ORDER.length) + '</span>';
+  greenEl.innerHTML = '<span class="idx">' + pad2(ORDER.indexOf(active) + 1) + '</span>' +
+                      '<span class="of">/ ' + pad2(ORDER.length) + '</span>';
 }
 
 function markKeys() {
   const here = at();
-  [...rack.querySelectorAll('[data-label]')].forEach(function (b) {
-    const on = b.dataset.label === here;
-    b.setAttribute('aria-current', String(on));
-    skin(b, on ? SKIN.keyOn : (LINKS[b.dataset.label] ? SKIN.link : SKIN.key));
+  [...keypad.children].forEach(function (b) {
+    b.classList.toggle('on', b.dataset.label === here);
+    b.setAttribute('aria-current', String(b.dataset.label === here));
   });
 }
 
 function paint() { renderMain(); renderSide(); renderCounter(); markKeys(); }
 
-// Put the cursor on a label, and show it if it is a section. Link keys only
-// highlight — opening a new tab because someone nudged the D-pad would be rude.
-function cursorTo(label, opts) {
+// ------------------------------------------------------------------ actions
+function cursorTo(label) {
   for (let r = 0; r < GRID.length; r++) {
     const c = GRID[r].indexOf(label);
     if (c >= 0) { cur = { r: r, c: c }; break; }
   }
   if (SECTIONS[label]) active = label;
   paint();
-  if (opts && opts.fire) fire('key:' + label);
 }
 
 function moveCursor(dr, dc) {
-  const rows = GRID.length, cols = GRID[0].length;
-  cur.r = (cur.r + dr + rows) % rows;
-  cur.c = (cur.c + dc + cols) % cols;
-  const label = at();
-  if (SECTIONS[label]) active = label;
+  cur.r = (cur.r + dr + GRID.length) % GRID.length;
+  cur.c = (cur.c + dc + GRID[0].length) % GRID[0].length;
+  if (SECTIONS[at()]) active = at();
   paint();
 }
 
-// Red button / Enter: act on whatever the cursor is sitting on.
+// Red / Enter: act on whatever the cursor is sitting on. A link only opens on
+// an explicit press — never just because the cursor drifted over it.
 function activate() {
   const label = at();
-  fire('key:' + label);
-  if (LINKS[label]) {
-    const a = rack.querySelector('[data-label="' + label + '"]');
-    if (a && a.href) window.open(a.href, /^https?:/.test(LINKS[label]) ? '_blank' : '_self');
-  } else {
-    active = label;
-    paint();
-  }
+  const el = keypad.querySelector('[data-label="' + label + '"]');
+  if (el) fire(el);
+  if (LINKS[label]) window.open(LINKS[label], /^https?:/.test(LINKS[label]) ? '_blank' : '_self');
+  else { active = label; paint(); }
 }
 
 const scrollPage = f => main.scrollBy({ top: main.clientHeight * f, behavior: 'smooth' });
-const toggleLit  = () => main.classList.toggle('lit');
-const goHome     = () => cursorTo('HOME');
+const toggleLit  = () => glass.classList.toggle('lit');
 
-// Visible travel plus a one-shot flare, for anything not triggered by a click.
-function press(region) {
-  const el = rack.querySelector('[data-region="' + region + '"]');
+function fire(el) {
+  if (!el) return;
+  el.classList.remove('fired');
+  void el.offsetWidth;
+  el.classList.add('fired');
+  setTimeout(() => el.classList.remove('fired'), 340);
+}
+function press(el) {
   if (!el) return;
   el.classList.add('press');
   setTimeout(() => el.classList.remove('press'), 150);
 }
-function fire(region) {
-  const el = rack.querySelector('[data-region="' + region + '"]');
-  if (!el) return;
-  el.classList.remove('fired');
-  void el.offsetWidth;               // restart the animation
-  el.classList.add('fired');
-  setTimeout(() => el.classList.remove('fired'), 320);
+
+// The cross is one piece: tipping it is a class on the plate, not four caps.
+let tipTimer = null;
+function tip(dir) {
+  clearTimeout(tipTimer);
+  plate.classList.remove('up', 'down', 'left', 'right');
+  void plate.offsetWidth;
+  plate.classList.add(dir);
+  tipTimer = setTimeout(() => plate.classList.remove(dir), 170);
 }
 
-// ---------------------------------------------------------------- controls
-const DPAD = {
-  'dpad:up':    () => moveCursor(-1, 0),
-  'dpad:down':  () => moveCursor(1, 0),
-  'dpad:left':  () => moveCursor(0, -1),
-  'dpad:right': () => moveCursor(0, 1)
+const DIR = {
+  up:    () => moveCursor(-1, 0),
+  down:  () => moveCursor(1, 0),
+  left:  () => moveCursor(0, -1),
+  right: () => moveCursor(0, 1)
 };
 
-const EXTRAS = [
-  { region: 'dpad:up',    skin: 'dpad',  cls: 'glyph', text: '▲', label: 'Cursor up' },
-  { region: 'dpad:down',  skin: 'dpad',  cls: 'glyph', text: '▼', label: 'Cursor down' },
-  { region: 'dpad:left',  skin: 'dpad',  cls: 'glyph', text: '◀', label: 'Cursor left' },
-  { region: 'dpad:right', skin: 'dpad',  cls: 'glyph', text: '▶', label: 'Cursor right' },
-  { region: 'btn:red',    skin: 'red',   cls: 'pill',  text: '',  label: 'Open selected key', act: activate },
-  { region: 'btn:blue',   skin: 'blue',  cls: 'pill',  text: '',  label: 'Back to index',     act: goHome },
-  { region: 'btn:white1', skin: 'white', cls: 'glyph', text: '▲', label: 'Page up',           act: () => scrollPage(-0.85) },
-  { region: 'btn:white2', skin: 'white', cls: 'glyph', text: '▼', label: 'Page down',         act: () => scrollPage(0.85) },
-  { region: 'btn:black',  skin: 'black', cls: 'round', text: '',  label: 'Toggle backlight',  act: toggleLit },
-  { region: 'btn:gold',   skin: 'gold',  cls: 'round', text: '',  label: 'Jump to contact',   act: () => cursorTo('CONTACT') }
-];
+const ACTS = {
+  open:     activate,
+  home:     () => cursorTo('HOME'),
+  next:     () => cursorTo(ORDER[(ORDER.indexOf(active) + 1) % ORDER.length]),
+  pageup:   () => scrollPage(-0.85),
+  pagedown: () => scrollPage(0.85),
+  light:    toggleLit,
+  contact:  () => cursorTo('CONTACT')
+};
 
-const TILES = [
-  { region: 'panel:dark1', tag: 'PROJECT',  name: 'DR. POCKET ↗',
-    href: 'https://drpocket.org/' },
-  { region: 'panel:dark2', tag: 'FIRMWARE', name: 'STRAIN GAUGE ↗',
-    href: 'https://github.com/deewang/Formula-Strain-Gauge-Sensor' }
-];
+// -------------------------------------------------------------------- build
+GRID.flat().forEach(function (label) {
+  const isLink = !!LINKS[label];
+  const el = document.createElement(isLink ? 'a' : 'button');
+  el.className = 'btn key' + (isLink ? ' link' : '');
+  el.dataset.label = label;
+  el.textContent = label;
+  if (isLink) {
+    el.href = LINKS[label];
+    if (/^https?:/.test(LINKS[label])) { el.target = '_blank'; el.rel = 'noopener'; }
+    el.addEventListener('click', () => cursorTo(label));
+  } else {
+    el.type = 'button';
+    el.addEventListener('click', function () { cursorTo(label); fire(el); });
+  }
+  keypad.appendChild(el);
+});
 
-function build() {
-  rack.innerHTML = '';
+TILES.forEach(function (t) {
+  const a = document.createElement('a');
+  a.className = 'tile';
+  a.href = t.href; a.target = '_blank'; a.rel = 'noopener';
+  a.innerHTML = '<span class="tag">' + esc(t.tag) + '</span>' +
+                '<span class="name">' + esc(t.name) + '</span>';
+  tileBox.appendChild(a);
+});
 
-  GRID.flat().forEach(function (label) {
-    const isLink = !!LINKS[label];
-    const el = document.createElement(isLink ? 'a' : 'button');
-    el.className = 'cap';
-    el.dataset.region = 'key:' + label;
-    el.dataset.label = label;
-    el.textContent = label;
-    el.setAttribute('aria-label', label.charAt(0) + label.slice(1).toLowerCase());
-    if (isLink) {
-      el.href = LINKS[label];
-      if (/^https?:/.test(LINKS[label])) { el.target = '_blank'; el.rel = 'noopener'; }
-      // Clicking still follows the link; the cursor follows along too.
-      el.addEventListener('click', () => cursorTo(label));
-      skin(el, SKIN.link);
-    } else {
-      el.type = 'button';
-      el.addEventListener('click', () => cursorTo(label, { fire: true }));
-      skin(el, SKIN.key);
-    }
-    rack.appendChild(el);
-  });
-
-  EXTRAS.forEach(function (x) {
-    const b = document.createElement('button');
-    b.className = 'cap ' + x.cls;
-    b.type = 'button';
-    b.dataset.region = x.region;
-    b.textContent = x.text;
-    b.title = x.label;
-    b.setAttribute('aria-label', x.label);
-    b.addEventListener('click', x.act || DPAD[x.region]);
-    skin(b, SKIN[x.skin]);
-    rack.appendChild(b);
-  });
-
-  TILES.forEach(function (t) {
-    const a = document.createElement('a');
-    a.className = 'cap stack';
-    a.dataset.region = t.region;
-    a.href = t.href;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.innerHTML = '<span class="tag">' + esc(t.tag) + '</span>' +
-                  '<span class="name">' + esc(t.name) + '</span>';
-    skin(a, SKIN.pad);
-    rack.appendChild(a);
-  });
-
-  const green = document.createElement('button');
-  green.className = 'cap';
-  green.type = 'button';
-  green.dataset.region = 'panel:green';
-  green.title = 'Section counter — click to advance';
-  green.setAttribute('aria-label', 'Next section');
-  green.addEventListener('click', function () {
-    cursorTo(ORDER[(ORDER.indexOf(active) + 1) % ORDER.length]);
-  });
-  skin(green, SKIN.green);
-  rack.appendChild(green);
-}
+document.querySelectorAll('.dpad .dz').forEach(function (z) {
+  z.addEventListener('click', function () { tip(z.dataset.dir); DIR[z.dataset.dir](); });
+});
+document.querySelectorAll('[data-act]').forEach(function (b) {
+  b.addEventListener('click', function () { ACTS[b.dataset.act](); fire(b); });
+});
 
 // ------------------------------------------------------------------ layout
-function place() {
-  const base = DEX_UI.rect('screen:left');
-  if (!base) return;
-  const unit = base.width / DEX_UI.regions['screen:left'].w;   // px per artwork unit
+const W = 1196, H = 880, CROP = 152, GAP = 14;
+let restY = 0, startY = 0, revealed = false;
 
-  [[main, 'screen:left'], [side, 'screen:right']].forEach(function (pair) {
-    const r = DEX_UI.rect(pair[1]);
-    pair[0].style.left = r.left + 'px';
-    pair[0].style.top = r.top + 'px';
-    pair[0].style.width = r.width + 'px';
-    pair[0].style.height = r.height + 'px';
-  });
+function layout() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const k = Math.min(vw * 0.97 / W, vh / (H - CROP), 1.55);
+  stage.style.setProperty('--k', k);
+  const devH = H * k;
+  restY = devH + GAP <= vh ? (vh - devH) / 2 : vh - devH - GAP;
+  startY = vh + 30;
+  stage.dataset.k = k;
+  apply(revealed ? restY : startY, k);
+}
+function apply(y, k) {
+  stage.style.transform = 'translateX(-50%) translateY(' + y + 'px) scale(' + k + ')';
+}
+window.addEventListener('resize', layout);
 
-  main.style.fontSize = (unit * 1.52) + 'px';
-  main.style.borderRadius = (unit * 2) + 'px';   // matches the artwork's LCD corners
-  side.style.fontSize = (unit * 1.62) + 'px';
+// --------------------------------------------------------- slide + handoff
+const SLIDE_MS = 950;
+const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+let slideStart = null;
 
-  [...rack.children].forEach(function (el) {
-    const r = DEX_UI.rect(el.dataset.region);
-    if (!r) return;
-    // Cap is shorter than its socket by exactly the side-wall height, so cap
-    // plus wall fills the well at rest and the cap bottoms out on press.
-    const lift = Math.max(3, Math.min(unit * 0.95, r.height * 0.28));
-    el.style.setProperty('--lift', lift + 'px');
-    el.style.left = r.left + 'px';
-    el.style.top = r.top + 'px';
-    el.style.width = r.width + 'px';
-    el.style.height = (r.height - lift) + 'px';
-    el.style.fontSize = (unit * 1.3) + 'px';
-  });
+function slide(ts) {
+  if (!slideStart) slideStart = ts;
+  const t = Math.min((ts - slideStart) / SLIDE_MS, 1);
+  apply(startY + (restY - startY) * easeOutCubic(t), +stage.dataset.k);
+  if (t < 1) requestAnimationFrame(slide);
 }
 
-DEX_UI.onLayout = place;
-
-// -------------------------------------------------- reveal after the slide
-// The canvas animates its own transform during the slide, so the overlay
-// stays hidden until the device has settled at its resting position.
-const SETTLE_AFTER = 1120;
-let revealTimer = null;
-
-const enter = PORTFOLIO.enterUI;
-PORTFOLIO.enterUI = function () {
-  enter();
-  clearTimeout(revealTimer);
-  revealTimer = setTimeout(function () { place(); layer.classList.add('on'); }, SETTLE_AFTER);
+window.PORTFOLIO.enterUI = function () {
+  revealed = true;
+  uiLayer.classList.add('on');
+  layout();
+  apply(startY, +stage.dataset.k);
+  slideStart = null;
+  requestAnimationFrame(slide);
 };
-
-const reset = PORTFOLIO.resetUI;
-PORTFOLIO.resetUI = function () {
-  clearTimeout(revealTimer);
-  layer.classList.remove('on');
-  reset();
+window.PORTFOLIO.resetUI = function () {
+  revealed = false;
+  uiLayer.classList.remove('on');
+  layout();
 };
 
 // ---------------------------------------------------------------- keyboard
-// The keyboard drives the same hardware, and shows the same press.
-const KEYMAP = {
-  ArrowLeft: 'dpad:left', ArrowRight: 'dpad:right',
-  ArrowUp: 'dpad:up', ArrowDown: 'dpad:down'
-};
+const KEYMAP = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
 document.addEventListener('keydown', function (ev) {
-  if (!layer.classList.contains('on')) return;
+  if (!revealed) return;
   if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName)) return;
-
-  const region = KEYMAP[ev.key];
-  if (region) { ev.preventDefault(); DPAD[region](); press(region); return; }
-  if (ev.key === 'Enter')    { ev.preventDefault(); press('btn:red'); activate(); return; }
-  if (ev.key === 'Backspace'){ ev.preventDefault(); press('btn:blue'); goHome(); return; }
-  if (ev.key === 'PageUp')   { ev.preventDefault(); press('btn:white1'); scrollPage(-0.85); return; }
-  if (ev.key === 'PageDown') { ev.preventDefault(); press('btn:white2'); scrollPage(0.85); return; }
+  const dir = KEYMAP[ev.key];
+  if (dir) { ev.preventDefault(); tip(dir); DIR[dir](); return; }
+  const hit = {
+    Enter: 'open', Backspace: 'home', PageUp: 'pageup', PageDown: 'pagedown'
+  }[ev.key];
+  if (!hit) return;
+  ev.preventDefault();
+  const b = document.querySelector('[data-act="' + hit + '"]');
+  press(b); ACTS[hit]();
 });
 
-build();
 paint();
-place();
+layout();
 
 })();
 </script>
