@@ -1328,7 +1328,7 @@ resetAll();
   }
   #dexLayer.on { opacity: 1; }
 
-  #screenMain, #screenSide, .hit {
+  #screenMain, #screenSide, .hit, .padtile, #greenPad {
     position: fixed;
     pointer-events: auto;
   }
@@ -1341,9 +1341,9 @@ resetAll();
     color: var(--ink);
     font-family: var(--fb);
     line-height: 1.5;
+    transition: background-color 180ms ease, color 180ms ease;
   }
   #screenMain::-webkit-scrollbar { display: none; }
-
   #screenMain .pad { padding: 1.1em 1.3em 1.6em; }
 
   .eyebrow {
@@ -1359,122 +1359,143 @@ resetAll();
     margin-bottom: 0.9em;
   }
 
-  .lead {
-    font-family: var(--fd);
-    font-size: 1.15em;
-    line-height: 1.3;
-    margin: 0 0 0.35em;
-  }
-  .sublead {
-    font-size: 0.95em;
-    color: var(--ink-dim);
-    margin: 0 0 1em;
-  }
+  .lead { font-family: var(--fd); font-size: 1.15em; line-height: 1.3; margin: 0 0 0.35em; }
+  .sublead { font-size: 0.95em; color: var(--ink-dim); margin: 0 0 1em; }
 
   .blk { margin-bottom: 1.2em; }
   .blk:last-child { margin-bottom: 0; }
-  .blk h3 {
-    font-family: var(--fd);
-    font-size: 0.86em;
-    line-height: 1.35;
-    margin: 0 0 0.2em;
-  }
+  .blk h3 { font-family: var(--fd); font-size: 0.86em; line-height: 1.35; margin: 0 0 0.2em; }
   .blk .role { font-size: 0.95em; margin: 0; }
   .blk .when {
-    font-family: var(--fd);
-    font-size: 0.58em;
-    letter-spacing: 0.1em;
-    color: var(--ink-dim);
-    margin: 0.25em 0 0.55em;
+    font-family: var(--fd); font-size: 0.58em; letter-spacing: 0.1em;
+    color: var(--ink-dim); margin: 0.25em 0 0.55em;
   }
 
   .bul { list-style: none; margin: 0; padding: 0; }
-  .bul li {
-    position: relative;
-    padding-left: 1.1em;
-    margin-bottom: 0.4em;
-    font-size: 0.92em;
-  }
+  .bul li { position: relative; padding-left: 1.1em; margin-bottom: 0.4em; font-size: 0.92em; }
   .bul li::before {
-    content: "";
-    position: absolute;
-    left: 0; top: 0.55em;
-    width: 0.34em; height: 0.34em;
-    background: var(--ink-dim);
+    content: ""; position: absolute; left: 0; top: 0.55em;
+    width: 0.34em; height: 0.34em; background: var(--ink-dim);
   }
 
   .rows { display: grid; gap: 0.6em; margin: 0; }
   .rows div { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 0.8em; }
   .rows dt {
-    font-family: var(--fd);
-    font-size: 0.58em;
-    letter-spacing: 0.1em;
-    color: var(--ink-dim);
-    padding-top: 0.35em;
+    font-family: var(--fd); font-size: 0.58em; letter-spacing: 0.1em;
+    color: var(--ink-dim); padding-top: 0.35em;
   }
   .rows dd { margin: 0; font-size: 0.95em; }
 
-  #screenMain a {
-    color: #123a63;
-    text-decoration: none;
-    border-bottom: 2px solid #6d90b4;
-  }
+  #screenMain a { color: #123a63; text-decoration: none; border-bottom: 2px solid #6d90b4; }
   #screenMain a:hover { border-bottom-color: #123a63; }
 
   .note {
-    font-size: 0.86em;
-    color: var(--ink-dim);
-    border-top: 2px solid var(--rule);
-    margin-top: 1.1em;
-    padding-top: 0.7em;
+    font-size: 0.86em; color: var(--ink-dim);
+    border-top: 2px solid var(--rule); margin-top: 1.1em; padding-top: 0.7em;
   }
+
+  /* Backlight on — the round black button drives this. */
+  #screenMain.lit { background: #16210f; color: #d9f2cb; }
+  #screenMain.lit .eyebrow,
+  #screenMain.lit .sublead,
+  #screenMain.lit .when,
+  #screenMain.lit .rows dt,
+  #screenMain.lit .note { color: #87a978; }
+  #screenMain.lit .eyebrow { border-bottom-color: #465a3c; }
+  #screenMain.lit .note { border-top-color: #465a3c; }
+  #screenMain.lit .bul li::before { background: #87a978; }
+  #screenMain.lit a { color: #a8e6ff; border-bottom-color: #4d7f97; }
+  #screenMain.lit a:hover { border-bottom-color: #a8e6ff; }
 
   /* ---------------------------------------------------------- side screen */
   #screenSide {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.35em;
-    padding: 0 1.1em;
-    color: #cfe3c6;
-    font-family: var(--fb);
-    overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center; gap: 0.35em;
+    padding: 0 1.1em; color: #cfe3c6; font-family: var(--fb); overflow: hidden;
   }
   #screenSide .who { font-family: var(--fd); font-size: 1.05em; color: #eaf6e4; }
   #screenSide .what { font-size: 0.92em; color: #9fb89a; }
   #screenSide .where {
-    font-family: var(--fd);
-    font-size: 0.62em;
-    letter-spacing: 0.12em;
-    color: #7fd06a;
+    font-family: var(--fd); font-size: 0.62em; letter-spacing: 0.12em; color: #7fd06a;
   }
 
-  /* -------------------------------------------------------- hit overlays */
-  .hit {
+  /* ------------------------------------------------- pressable, everywhere
+     Every control shares one physical model: it lifts on hover, and on press
+     it drops into the case and the raised lip flips to an inner shadow. */
+  .hit, .padtile, #greenPad {
     appearance: none;
     background: transparent;
     border: 0;
     padding: 0;
     cursor: pointer;
-    border-radius: 2px;
+    border-radius: 3px;
+    transition: transform 70ms ease, box-shadow 70ms ease, background-color 140ms ease;
+    will-change: transform;
   }
-  .hit:hover { background: rgba(255, 255, 255, 0.22); }
-  .hit:active { background: rgba(0, 0, 0, 0.18); }
+  .hit::after, .padtile::after, #greenPad::after {
+    content: "";
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0) 58%);
+    opacity: 0;
+    transition: opacity 140ms ease;
+    pointer-events: none;
+  }
+  .hit:hover, .padtile:hover, #greenPad:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 rgba(0,0,0,0.42), 0 8px 12px rgba(0,0,0,0.30);
+  }
+  .hit:hover::after, .padtile:hover::after, #greenPad:hover::after { opacity: 1; }
+
+  .hit:active, .hit.press,
+  .padtile:active, .padtile.press,
+  #greenPad:active, #greenPad.press {
+    transform: translateY(3px);
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.55);
+    background-color: rgba(0,0,0,0.16);
+  }
+  .hit:active::after, .hit.press::after,
+  .padtile:active::after, .padtile.press::after,
+  #greenPad:active::after, #greenPad.press::after { opacity: 0; }
+
+  .hit.round { border-radius: 50%; }
+  .hit.pill  { border-radius: 999px; }
+
   .hit[aria-current="true"] {
-    background: rgba(255, 255, 255, 0.30);
-    box-shadow: inset 0 0 0 3px #ffffff;
+    background-color: rgba(255,255,255,0.30);
+    outline: 3px solid #ffffff;
+    outline-offset: -3px;
   }
-  .hit:focus-visible { outline: 3px solid #ffd23f; outline-offset: 1px; }
+  .hit:focus-visible, .padtile:focus-visible, #greenPad:focus-visible {
+    outline: 3px solid #ffd23f; outline-offset: 2px;
+  }
+
+  /* ------------------------------------------------------------ pad tiles */
+  .padtile {
+    display: flex; flex-direction: column; justify-content: center; gap: 0.25em;
+    padding: 0 0.9em;
+    text-decoration: none;
+    font-family: var(--fb);
+    overflow: hidden;
+  }
+  .padtile .tag {
+    font-family: var(--fd); font-size: 0.55em; letter-spacing: 0.12em; color: #93ad80;
+  }
+  .padtile .name {
+    font-family: var(--fd); font-size: 0.78em; line-height: 1.3; color: #edf8e3;
+  }
+
+  #greenPad {
+    display: flex; align-items: center; justify-content: center; gap: 0.5em;
+    font-family: var(--fd); color: #17300d;
+  }
+  #greenPad .idx { font-size: 1.45em; letter-spacing: 0.04em; }
+  #greenPad .of  { font-size: 0.68em; opacity: 0.72; }
 
   /* -------------------------------------------------- plain-text fallback */
   #hatch {
-    position: fixed;
-    left: 22px; bottom: 22px;
-    z-index: 15;
+    position: fixed; left: 22px; bottom: 22px; z-index: 15;
     font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
-    font-size: 12px;
-    line-height: 1.9;
-    color: #6d6d78;
+    font-size: 12px; line-height: 1.9; color: #6d6d78;
   }
   #hatch b { color: #b9b9c6; font-weight: 600; }
   #hatch a { color: #b9b9c6; text-decoration: none; border-bottom: 1px solid #45454f; }
@@ -1483,6 +1504,8 @@ resetAll();
 
   @media (prefers-reduced-motion: reduce) {
     #dexLayer { transition: none; }
+    .hit, .padtile, #greenPad { transition: none; }
+    .hit:hover, .padtile:hover, #greenPad:hover { transform: none; }
   }
   @media (max-width: 760px) {
     #hatch { font-size: 11px; left: 14px; bottom: 14px; }
@@ -1493,6 +1516,7 @@ resetAll();
   <section id="screenMain" tabindex="0" aria-label="Dex entry"></section>
   <aside id="screenSide" aria-hidden="true"></aside>
   <nav id="hits" aria-label="Dex navigation"></nav>
+  <div id="pads"></div>
 </div>
 
 <footer id="hatch">
@@ -1518,7 +1542,7 @@ const SECTIONS = {
       ['TEAM', 'Formula Racing SAE — Electrical Subteam'],
       ['BASED', 'Vancouver, BC']
     ],
-    note: 'Use the keys on the right, the D-pad, or your arrow keys. Left and right change section; up and down scroll.'
+    note: 'Every control works. Keys pick a section, the D-pad scrolls and steps, the pills step too, the white buttons page, the round black button turns the backlight on, and the gold button jumps to contact.'
   },
 
   ABOUT: {
@@ -1567,6 +1591,7 @@ const SECTIONS = {
       {
         title: 'Strain Gauge Data Acquisition Board',
         when: 'STM32 · CAN @ 100 Hz · C / Python',
+        href: 'https://github.com/deewang/Formula-Strain-Gauge-Sensor',
         bullets: [
           'Streamed real-time a-arm load data via CAN bus at 100 Hz on STM32, synchronized with vehicle AIM accelerometer data, using ADC with DMA and STM32 HAL drivers for digital filtering.',
           'Flashed and debugged firmware via ST-Link, validating ADC readings and signal integrity.',
@@ -1639,28 +1664,28 @@ const LINKS = {
 
 // ------------------------------------------------------------------ render
 const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-const pad = n => String(n).padStart(3, '0');
+const pad3 = n => String(n).padStart(3, '0');
+const pad2 = n => String(n).padStart(2, '0');
 
 const layer = document.getElementById('dexLayer');
 const main  = document.getElementById('screenMain');
 const side  = document.getElementById('screenSide');
 const hits  = document.getElementById('hits');
+const pads  = document.getElementById('pads');
 
 let active = 'HOME';
 
 function renderMain() {
   const s = SECTIONS[active];
   let html = '<div class="pad">';
-  html += '<div class="eyebrow"><span>Nº ' + pad(s.no) + '</span><span>' + esc(s.kind) + '</span></div>';
+  html += '<div class="eyebrow"><span>Nº ' + pad3(s.no) + '</span><span>' + esc(s.kind) + '</span></div>';
   if (s.lead)    html += '<p class="lead">' + esc(s.lead) + '</p>';
   if (s.sublead) html += '<p class="sublead">' + esc(s.sublead) + '</p>';
 
   if (s.rows) {
     html += '<dl class="rows">';
-    s.rows.forEach(function (r) {
-      // Row values may carry anchors on purpose, so they are not escaped.
-      html += '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>';
-    });
+    // Row values may carry anchors on purpose, so they are not escaped.
+    s.rows.forEach(r => { html += '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>'; });
     html += '</dl>';
   }
 
@@ -1684,11 +1709,18 @@ function renderMain() {
 }
 
 function renderSide() {
-  const s = SECTIONS[active];
   side.innerHTML =
     '<div class="who">DANIEL WANG</div>' +
     '<div class="what">Computer Engineering · UBC 2028</div>' +
-    '<div class="where">▸ ' + esc(s.kind) + '</div>';
+    '<div class="where">▸ ' + esc(SECTIONS[active].kind) + '</div>';
+}
+
+function renderCounter() {
+  const green = document.getElementById('greenPad');
+  if (!green) return;
+  green.innerHTML =
+    '<span class="idx">' + pad2(ORDER.indexOf(active) + 1) + '</span>' +
+    '<span class="of">/ ' + pad2(ORDER.length) + '</span>';
 }
 
 function markKeys() {
@@ -1702,17 +1734,57 @@ function show(name) {
   active = name;
   renderMain();
   renderSide();
+  renderCounter();
   markKeys();
 }
 
 function stepSection(d) {
-  const i = ORDER.indexOf(active);
-  show(ORDER[(i + d + ORDER.length) % ORDER.length]);
+  show(ORDER[(ORDER.indexOf(active) + d + ORDER.length) % ORDER.length]);
+}
+function scrollBy(frac) {
+  main.scrollBy({ top: main.clientHeight * frac, behavior: 'smooth' });
+}
+function toggleLit() {
+  main.classList.toggle('lit');
+}
+
+// Visible press for anything triggered by the keyboard rather than a click.
+function flash(region) {
+  const el = layer.querySelector('[data-region="' + region + '"]');
+  if (!el) return;
+  el.classList.add('press');
+  setTimeout(() => el.classList.remove('press'), 130);
 }
 
 // ------------------------------------------------------------- hit targets
-function makeHits() {
+// Every region the artwork draws is now bound to something real.
+const EXTRAS = [
+  { region: 'btn:red',    shape: 'pill',  label: 'Previous section', act: () => stepSection(-1) },
+  { region: 'btn:blue',   shape: 'pill',  label: 'Next section',     act: () => stepSection(1) },
+  { region: 'btn:white1', shape: '',      label: 'Page up',          act: () => scrollBy(-0.85) },
+  { region: 'btn:white2', shape: '',      label: 'Page down',        act: () => scrollBy(0.85) },
+  { region: 'btn:black',  shape: 'round', label: 'Toggle backlight', act: toggleLit },
+  { region: 'btn:gold',   shape: 'round', label: 'Jump to contact',  act: () => show('CONTACT') }
+];
+
+const TILES = [
+  { region: 'panel:dark1', tag: 'PROJECT',  name: 'DR. POCKET ↗',
+    href: 'https://drpocket.org/' },
+  { region: 'panel:dark2', tag: 'FIRMWARE', name: 'STRAIN GAUGE ↗',
+    href: 'https://github.com/deewang/Formula-Strain-Gauge-Sensor' }
+];
+
+const DPAD = {
+  'dpad:up':    () => scrollBy(-0.6),
+  'dpad:down':  () => scrollBy(0.6),
+  'dpad:left':  () => stepSection(-1),
+  'dpad:right': () => stepSection(1)
+};
+
+function build() {
   hits.innerHTML = '';
+  pads.innerHTML = '';
+
   DEX_UI.keys.flat().forEach(function (label) {
     const el = document.createElement(LINKS[label] ? 'a' : 'button');
     el.className = 'hit';
@@ -1731,12 +1803,6 @@ function makeHits() {
     hits.appendChild(el);
   });
 
-  const DPAD = {
-    'dpad:up':    () => main.scrollBy({ top: -main.clientHeight * 0.6, behavior: 'smooth' }),
-    'dpad:down':  () => main.scrollBy({ top:  main.clientHeight * 0.6, behavior: 'smooth' }),
-    'dpad:left':  () => stepSection(-1),
-    'dpad:right': () => stepSection(1)
-  };
   Object.keys(DPAD).forEach(function (region) {
     const b = document.createElement('button');
     b.className = 'hit';
@@ -1746,13 +1812,45 @@ function makeHits() {
     b.addEventListener('click', DPAD[region]);
     hits.appendChild(b);
   });
+
+  EXTRAS.forEach(function (x) {
+    const b = document.createElement('button');
+    b.className = 'hit ' + x.shape;
+    b.type = 'button';
+    b.dataset.region = x.region;
+    b.setAttribute('aria-label', x.label);
+    b.title = x.label;
+    b.addEventListener('click', x.act);
+    hits.appendChild(b);
+  });
+
+  TILES.forEach(function (t) {
+    const a = document.createElement('a');
+    a.className = 'padtile';
+    a.dataset.region = t.region;
+    a.href = t.href;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.innerHTML = '<span class="tag">' + esc(t.tag) + '</span>' +
+                  '<span class="name">' + esc(t.name) + '</span>';
+    pads.appendChild(a);
+  });
+
+  const green = document.createElement('button');
+  green.id = 'greenPad';
+  green.type = 'button';
+  green.dataset.region = 'panel:green';
+  green.setAttribute('aria-label', 'Next section');
+  green.title = 'Section counter — click to advance';
+  green.addEventListener('click', () => stepSection(1));
+  pads.appendChild(green);
 }
 
 // ------------------------------------------------------------------ layout
 function place() {
-  const r0 = DEX_UI.rect('screen:left');
-  if (!r0) return;
-  const unit = r0.width / DEX_UI.regions['screen:left'].w;   // px per artwork unit
+  const base = DEX_UI.rect('screen:left');
+  if (!base) return;
+  const unit = base.width / DEX_UI.regions['screen:left'].w;   // px per artwork unit
 
   [[main, 'screen:left'], [side, 'screen:right']].forEach(function (pair) {
     const r = DEX_UI.rect(pair[1]);
@@ -1763,15 +1861,19 @@ function place() {
   });
 
   main.style.fontSize = (unit * 1.52) + 'px';
+  main.style.borderRadius = (unit * 2) + 'px';   // matches the artwork's LCD corners
   side.style.fontSize = (unit * 1.62) + 'px';
 
-  [...hits.children].forEach(function (el) {
+  [...hits.children, ...pads.children].forEach(function (el) {
     const r = DEX_UI.rect(el.dataset.region);
     if (!r) return;
     el.style.left = r.left + 'px';
     el.style.top = r.top + 'px';
     el.style.width = r.width + 'px';
     el.style.height = r.height + 'px';
+    if (el.classList.contains('padtile') || el.id === 'greenPad') {
+      el.style.fontSize = (unit * 1.55) + 'px';
+    }
   });
 }
 
@@ -1801,16 +1903,23 @@ PORTFOLIO.resetUI = function () {
 };
 
 // ---------------------------------------------------------------- keyboard
+const KEYMAP = {
+  ArrowLeft:  'dpad:left',
+  ArrowRight: 'dpad:right',
+  ArrowUp:    'dpad:up',
+  ArrowDown:  'dpad:down'
+};
 document.addEventListener('keydown', function (ev) {
   if (!layer.classList.contains('on')) return;
   if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName)) return;
-  if (ev.key === 'ArrowLeft')  { ev.preventDefault(); stepSection(-1); }
-  if (ev.key === 'ArrowRight') { ev.preventDefault(); stepSection(1); }
-  if (ev.key === 'ArrowUp')    { ev.preventDefault(); main.scrollBy({ top: -90, behavior: 'smooth' }); }
-  if (ev.key === 'ArrowDown')  { ev.preventDefault(); main.scrollBy({ top:  90, behavior: 'smooth' }); }
+  const region = KEYMAP[ev.key];
+  if (!region) return;
+  ev.preventDefault();
+  DPAD[region]();
+  flash(region);
 });
 
-makeHits();
+build();
 show('HOME');
 place();
 
