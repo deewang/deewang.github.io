@@ -1401,46 +1401,77 @@ resetAll();
   #screenSide .where {
     font-family: var(--fd); font-size: 0.62em; letter-spacing: 0.12em; color: #7fd06a;
   }
+  #screenSide .where.link { color: #ffd45e; }
 
   /* =================================================================== caps
-     One physical model for every control. The cap is a solid slab; the
-     `0 var(--lift) 0 var(--side)` shadow is its extruded side wall. Pressing
-     translates the slab down by exactly that height and collapses the wall to
-     nothing, so the cap bottoms out in the socket the canvas painted.
+     One physical model for every control. The face is a top-lit dome, and the
+     `0 var(--lift) 0 var(--side)` shadow is the extruded side wall beneath it.
+     Pressing drops the slab by exactly that height, squashes it slightly into
+     its own base, darkens the dome, and collapses the wall to nothing — so the
+     cap bottoms out in the socket the canvas painted.
      ==================================================================== */
   .cap {
     appearance: none;
     margin: 0; padding: 0; border: 0;
     cursor: pointer;
-    background: var(--face);
     color: var(--label);
     font-family: var(--fd);
     line-height: 1;
     display: flex; align-items: center; justify-content: center;
     text-align: center; text-decoration: none; white-space: nowrap;
     border-radius: 2px;
+    transform-origin: 50% 100%;
+    background: linear-gradient(180deg, var(--hi) 0%, var(--face) 48%, var(--lo) 100%);
     box-shadow:
-      inset 0 2px 0 rgba(255, 255, 255, 0.32),
-      inset 0 -2px 0 rgba(0, 0, 0, 0.20),
+      inset 0 0 0 1.5px rgba(0, 0, 0, 0.30),
+      inset 0 2px 0 rgba(255, 255, 255, 0.45),
+      inset 0 -3px 0 rgba(0, 0, 0, 0.22),
       0 var(--lift) 0 var(--side),
-      0 calc(var(--lift) + 2px) 7px rgba(0, 0, 0, 0.50);
-    transform: translateY(0);
-    transition: transform 65ms cubic-bezier(.2, .7, .3, 1),
-                box-shadow 65ms ease,
-                background-color 140ms ease,
+      0 calc(var(--lift) + 1.5px) 0 rgba(0, 0, 0, 0.55),
+      0 calc(var(--lift) + 5px) 9px rgba(0, 0, 0, 0.50);
+    transition: transform 70ms cubic-bezier(.2, .8, .3, 1),
+                box-shadow 70ms ease,
+                background 130ms ease,
                 filter 130ms ease;
     will-change: transform;
   }
-  .cap:hover { filter: brightness(1.13); }
+
+  .cap:hover { filter: brightness(1.12) saturate(1.06); }
+
   .cap:active, .cap.press {
-    transform: translateY(var(--lift));
+    transform: translateY(var(--lift)) scaleY(0.94);
+    background: linear-gradient(180deg, var(--lo) 0%, var(--face) 72%, var(--face) 100%);
     box-shadow:
-      inset 0 3px 7px rgba(0, 0, 0, 0.55),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+      inset 0 0 0 1.5px rgba(0, 0, 0, 0.40),
+      inset 0 4px 9px rgba(0, 0, 0, 0.55),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.06),
       0 0 0 var(--side);
-    filter: brightness(0.9);
+    filter: brightness(0.88);
   }
-  .cap:focus-visible { outline: 3px solid #ffd23f; outline-offset: 3px; }
+  .cap:focus-visible { outline: 3px solid #ffd23f; outline-offset: 4px; }
+
+  /* A fired control flares once, so a keyboard press reads as an action and
+     not just a wiggle. */
+  @keyframes capFire {
+    0%   { filter: brightness(1.85) saturate(1.3); }
+    100% { filter: brightness(1) saturate(1); }
+  }
+  .cap.fired { animation: capFire 300ms ease-out; }
+
+  /* The D-pad cursor sits on one key at a time and breathes so you can find it. */
+  .cap::after {
+    content: "";
+    position: absolute; inset: -3px;
+    border-radius: inherit;
+    border: 2px solid transparent;
+    pointer-events: none;
+    transition: border-color 140ms ease;
+  }
+  .cap[aria-current="true"]::after {
+    border-color: #fff4cf;
+    animation: capRing 1500ms ease-in-out infinite;
+  }
+  @keyframes capRing { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
 
   .cap.round { border-radius: 50%; }
   .cap.pill  { border-radius: 999px; }
@@ -1449,7 +1480,7 @@ resetAll();
     flex-direction: column; align-items: flex-start; justify-content: center;
     gap: 0.3em; padding: 0 0.85em; white-space: normal;
   }
-  .cap .tag { font-size: 0.62em; letter-spacing: 0.12em; opacity: 0.7; }
+  .cap .tag { font-size: 0.62em; letter-spacing: 0.12em; opacity: 0.72; }
   .cap .name { font-size: 0.92em; line-height: 1.25; }
   .cap .idx { font-size: 1.6em; letter-spacing: 0.04em; }
   .cap .of  { font-size: 0.75em; opacity: 0.72; }
@@ -1467,6 +1498,8 @@ resetAll();
 
   @media (prefers-reduced-motion: reduce) {
     #dexLayer, .cap { transition: none; }
+    .cap.fired { animation: none; }
+    .cap[aria-current="true"]::after { animation: none; opacity: 1; }
   }
   @media (max-width: 760px) {
     #hatch { font-size: 11px; left: 14px; bottom: 14px; }
@@ -1502,7 +1535,7 @@ const SECTIONS = {
       ['TEAM', 'Formula Racing SAE — Electrical Subteam'],
       ['BASED', 'Vancouver, BC']
     ],
-    note: 'Every control works. Keys pick a section, the D-pad scrolls and steps, the pills step too, the white buttons page, the round black button turns on the backlight, and the gold button jumps to contact.'
+    note: 'The D-pad moves the cursor across all ten keys. Red opens whatever it is sitting on, blue goes home, the white buttons page this screen, the round black button turns on the backlight, and the gold one jumps to contact.'
   },
 
   ABOUT: {
@@ -1622,7 +1655,7 @@ const LINKS = {
   SOURCE: 'https://github.com/deewang/deewang.github.io'
 };
 
-// Cap colours: the face, the extruded side wall beneath it, and the label.
+// Base face colour per control; the dome highlight and shade are derived.
 const SKIN = {
   key:   { face: '#6cc0e8', side: '#24617f', label: '#0c3350' },
   keyOn: { face: '#ffd45e', side: '#a9791d', label: '#3a2a06' },
@@ -1637,18 +1670,38 @@ const SKIN = {
   dpad:  { face: '#565662', side: '#24242c', label: '#cfcfda' }
 };
 
-// ------------------------------------------------------------------ render
+// ------------------------------------------------------------------ helpers
 const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const pad3 = n => String(n).padStart(3, '0');
 const pad2 = n => String(n).padStart(2, '0');
+
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    .map(v => Math.max(0, Math.min(255, Math.round(v + amt))));
+  return '#' + ((1 << 24) | (ch[0] << 16) | (ch[1] << 8) | ch[2]).toString(16).slice(1);
+}
+
+function skin(el, s) {
+  el.style.setProperty('--face', s.face);
+  el.style.setProperty('--hi', shade(s.face, 38));
+  el.style.setProperty('--lo', shade(s.face, -30));
+  el.style.setProperty('--side', s.side);
+  el.style.setProperty('--label', s.label);
+}
 
 const layer = document.getElementById('dexLayer');
 const main  = document.getElementById('screenMain');
 const side  = document.getElementById('screenSide');
 const rack  = document.getElementById('controls');
 
-let active = 'HOME';
+const GRID = DEX_UI.keys;                 // [[5 labels], [5 labels]]
+let active = 'HOME';                      // section on screen
+let cur = { r: 0, c: 0 };                 // D-pad cursor across the keypad
 
+const at = () => GRID[cur.r][cur.c];
+
+// ------------------------------------------------------------------ render
 function renderMain() {
   const s = SECTIONS[active];
   let html = '<div class="pad">';
@@ -1683,10 +1736,13 @@ function renderMain() {
 }
 
 function renderSide() {
+  const onLink = !!LINKS[at()];
   side.innerHTML =
     '<div class="who">DANIEL WANG</div>' +
     '<div class="what">Computer Engineering · UBC 2028</div>' +
-    '<div class="where">▸ ' + esc(SECTIONS[active].kind) + '</div>';
+    '<div class="where' + (onLink ? ' link' : '') + '">' +
+      (onLink ? '▸ ' + esc(at()) + ' — RED opens ↗' : '▸ ' + esc(SECTIONS[active].kind)) +
+    '</div>';
 }
 
 function renderCounter() {
@@ -1697,59 +1753,89 @@ function renderCounter() {
 }
 
 function markKeys() {
-  [...rack.querySelectorAll('[data-key]')].forEach(function (b) {
-    const on = b.dataset.key === active;
+  const here = at();
+  [...rack.querySelectorAll('[data-label]')].forEach(function (b) {
+    const on = b.dataset.label === here;
     b.setAttribute('aria-current', String(on));
-    skin(b, on ? SKIN.keyOn : SKIN.key);
+    skin(b, on ? SKIN.keyOn : (LINKS[b.dataset.label] ? SKIN.link : SKIN.key));
   });
 }
 
-function skin(el, s) {
-  el.style.setProperty('--face', s.face);
-  el.style.setProperty('--side', s.side);
-  el.style.setProperty('--label', s.label);
+function paint() { renderMain(); renderSide(); renderCounter(); markKeys(); }
+
+// Put the cursor on a label, and show it if it is a section. Link keys only
+// highlight — opening a new tab because someone nudged the D-pad would be rude.
+function cursorTo(label, opts) {
+  for (let r = 0; r < GRID.length; r++) {
+    const c = GRID[r].indexOf(label);
+    if (c >= 0) { cur = { r: r, c: c }; break; }
+  }
+  if (SECTIONS[label]) active = label;
+  paint();
+  if (opts && opts.fire) fire('key:' + label);
 }
 
-function show(name) {
-  if (!SECTIONS[name]) return;
-  active = name;
-  renderMain();
-  renderSide();
-  renderCounter();
-  markKeys();
+function moveCursor(dr, dc) {
+  const rows = GRID.length, cols = GRID[0].length;
+  cur.r = (cur.r + dr + rows) % rows;
+  cur.c = (cur.c + dc + cols) % cols;
+  const label = at();
+  if (SECTIONS[label]) active = label;
+  paint();
 }
 
-const stepSection = d => show(ORDER[(ORDER.indexOf(active) + d + ORDER.length) % ORDER.length]);
-const scrollPage  = f => main.scrollBy({ top: main.clientHeight * f, behavior: 'smooth' });
-const toggleLit   = () => main.classList.toggle('lit');
+// Red button / Enter: act on whatever the cursor is sitting on.
+function activate() {
+  const label = at();
+  fire('key:' + label);
+  if (LINKS[label]) {
+    const a = rack.querySelector('[data-label="' + label + '"]');
+    if (a && a.href) window.open(a.href, /^https?:/.test(LINKS[label]) ? '_blank' : '_self');
+  } else {
+    active = label;
+    paint();
+  }
+}
 
-// Keyboard activation gets the same visible travel as a click.
-function flash(region) {
+const scrollPage = f => main.scrollBy({ top: main.clientHeight * f, behavior: 'smooth' });
+const toggleLit  = () => main.classList.toggle('lit');
+const goHome     = () => cursorTo('HOME');
+
+// Visible travel plus a one-shot flare, for anything not triggered by a click.
+function press(region) {
   const el = rack.querySelector('[data-region="' + region + '"]');
   if (!el) return;
   el.classList.add('press');
-  setTimeout(() => el.classList.remove('press'), 140);
+  setTimeout(() => el.classList.remove('press'), 150);
+}
+function fire(region) {
+  const el = rack.querySelector('[data-region="' + region + '"]');
+  if (!el) return;
+  el.classList.remove('fired');
+  void el.offsetWidth;               // restart the animation
+  el.classList.add('fired');
+  setTimeout(() => el.classList.remove('fired'), 320);
 }
 
 // ---------------------------------------------------------------- controls
 const DPAD = {
-  'dpad:up':    () => scrollPage(-0.6),
-  'dpad:down':  () => scrollPage(0.6),
-  'dpad:left':  () => stepSection(-1),
-  'dpad:right': () => stepSection(1)
+  'dpad:up':    () => moveCursor(-1, 0),
+  'dpad:down':  () => moveCursor(1, 0),
+  'dpad:left':  () => moveCursor(0, -1),
+  'dpad:right': () => moveCursor(0, 1)
 };
 
 const EXTRAS = [
-  { region: 'dpad:up',     skin: 'dpad',  cls: 'glyph', text: '▲', label: 'Scroll up' },
-  { region: 'dpad:down',   skin: 'dpad',  cls: 'glyph', text: '▼', label: 'Scroll down' },
-  { region: 'dpad:left',   skin: 'dpad',  cls: 'glyph', text: '◀', label: 'Previous section' },
-  { region: 'dpad:right',  skin: 'dpad',  cls: 'glyph', text: '▶', label: 'Next section' },
-  { region: 'btn:red',     skin: 'red',   cls: 'pill',  text: '',  label: 'Previous section', act: () => stepSection(-1) },
-  { region: 'btn:blue',    skin: 'blue',  cls: 'pill',  text: '',  label: 'Next section',     act: () => stepSection(1) },
-  { region: 'btn:white1',  skin: 'white', cls: 'glyph', text: '▲', label: 'Page up',          act: () => scrollPage(-0.85) },
-  { region: 'btn:white2',  skin: 'white', cls: 'glyph', text: '▼', label: 'Page down',        act: () => scrollPage(0.85) },
-  { region: 'btn:black',   skin: 'black', cls: 'round', text: '',  label: 'Toggle backlight', act: toggleLit },
-  { region: 'btn:gold',    skin: 'gold',  cls: 'round', text: '',  label: 'Jump to contact',  act: () => show('CONTACT') }
+  { region: 'dpad:up',    skin: 'dpad',  cls: 'glyph', text: '▲', label: 'Cursor up' },
+  { region: 'dpad:down',  skin: 'dpad',  cls: 'glyph', text: '▼', label: 'Cursor down' },
+  { region: 'dpad:left',  skin: 'dpad',  cls: 'glyph', text: '◀', label: 'Cursor left' },
+  { region: 'dpad:right', skin: 'dpad',  cls: 'glyph', text: '▶', label: 'Cursor right' },
+  { region: 'btn:red',    skin: 'red',   cls: 'pill',  text: '',  label: 'Open selected key', act: activate },
+  { region: 'btn:blue',   skin: 'blue',  cls: 'pill',  text: '',  label: 'Back to index',     act: goHome },
+  { region: 'btn:white1', skin: 'white', cls: 'glyph', text: '▲', label: 'Page up',           act: () => scrollPage(-0.85) },
+  { region: 'btn:white2', skin: 'white', cls: 'glyph', text: '▼', label: 'Page down',         act: () => scrollPage(0.85) },
+  { region: 'btn:black',  skin: 'black', cls: 'round', text: '',  label: 'Toggle backlight',  act: toggleLit },
+  { region: 'btn:gold',   skin: 'gold',  cls: 'round', text: '',  label: 'Jump to contact',   act: () => cursorTo('CONTACT') }
 ];
 
 const TILES = [
@@ -1762,23 +1848,23 @@ const TILES = [
 function build() {
   rack.innerHTML = '';
 
-  DEX_UI.keys.flat().forEach(function (label) {
+  GRID.flat().forEach(function (label) {
     const isLink = !!LINKS[label];
     const el = document.createElement(isLink ? 'a' : 'button');
     el.className = 'cap';
     el.dataset.region = 'key:' + label;
+    el.dataset.label = label;
     el.textContent = label;
-    const pretty = label.charAt(0) + label.slice(1).toLowerCase();
+    el.setAttribute('aria-label', label.charAt(0) + label.slice(1).toLowerCase());
     if (isLink) {
       el.href = LINKS[label];
       if (/^https?:/.test(LINKS[label])) { el.target = '_blank'; el.rel = 'noopener'; }
-      el.setAttribute('aria-label', pretty);
+      // Clicking still follows the link; the cursor follows along too.
+      el.addEventListener('click', () => cursorTo(label));
       skin(el, SKIN.link);
     } else {
       el.type = 'button';
-      el.dataset.key = label;
-      el.setAttribute('aria-label', pretty);
-      el.addEventListener('click', () => show(label));
+      el.addEventListener('click', () => cursorTo(label, { fire: true }));
       skin(el, SKIN.key);
     }
     rack.appendChild(el);
@@ -1816,7 +1902,9 @@ function build() {
   green.dataset.region = 'panel:green';
   green.title = 'Section counter — click to advance';
   green.setAttribute('aria-label', 'Next section');
-  green.addEventListener('click', () => stepSection(1));
+  green.addEventListener('click', function () {
+    cursorTo(ORDER[(ORDER.indexOf(active) + 1) % ORDER.length]);
+  });
   skin(green, SKIN.green);
   rack.appendChild(green);
 }
@@ -1842,9 +1930,9 @@ function place() {
   [...rack.children].forEach(function (el) {
     const r = DEX_UI.rect(el.dataset.region);
     if (!r) return;
-    // The cap is shorter than its socket by exactly the side-wall height, so
-    // cap plus wall fills the well at rest and the cap bottoms out on press.
-    const lift = Math.max(2, Math.min(unit * 0.8, r.height * 0.26));
+    // Cap is shorter than its socket by exactly the side-wall height, so cap
+    // plus wall fills the well at rest and the cap bottoms out on press.
+    const lift = Math.max(3, Math.min(unit * 0.95, r.height * 0.28));
     el.style.setProperty('--lift', lift + 'px');
     el.style.left = r.left + 'px';
     el.style.top = r.top + 'px';
@@ -1877,6 +1965,7 @@ PORTFOLIO.resetUI = function () {
 };
 
 // ---------------------------------------------------------------- keyboard
+// The keyboard drives the same hardware, and shows the same press.
 const KEYMAP = {
   ArrowLeft: 'dpad:left', ArrowRight: 'dpad:right',
   ArrowUp: 'dpad:up', ArrowDown: 'dpad:down'
@@ -1884,15 +1973,17 @@ const KEYMAP = {
 document.addEventListener('keydown', function (ev) {
   if (!layer.classList.contains('on')) return;
   if (ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName)) return;
+
   const region = KEYMAP[ev.key];
-  if (!region) return;
-  ev.preventDefault();
-  DPAD[region]();
-  flash(region);
+  if (region) { ev.preventDefault(); DPAD[region](); press(region); return; }
+  if (ev.key === 'Enter')    { ev.preventDefault(); press('btn:red'); activate(); return; }
+  if (ev.key === 'Backspace'){ ev.preventDefault(); press('btn:blue'); goHome(); return; }
+  if (ev.key === 'PageUp')   { ev.preventDefault(); press('btn:white1'); scrollPage(-0.85); return; }
+  if (ev.key === 'PageDown') { ev.preventDefault(); press('btn:white2'); scrollPage(0.85); return; }
 });
 
 build();
-show('HOME');
+paint();
 place();
 
 })();
