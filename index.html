@@ -16,23 +16,19 @@
     --fb: 'Silkscreen', 'Courier New', monospace;
     --fm: 'IBM Plex Mono', ui-monospace, monospace;
 
-    /* Sampled off the reference render: a warm matte red under soft studio
-       light, sitting on a mid-grey sweep. */
-    --red-lit:  #e25a4a;
-    --red:      #d4473a;
-    --red-mid:  #c23c2f;
-    --red-deep: #a33227;
-    --red-edge: #7d2119;
+    /* The intro animation's palette, unchanged — same vivid red, same clean
+       white. The 3D rendering supplies the shading; the colours stay pure. */
+    --red-lit:  #ef6353;
+    --red:      #d93b2b;
+    --red-mid:  #c93324;
+    --red-deep: #a3241a;
+    --red-edge: #7d1a12;
 
-    --bezel:      #dddddb;
-    --bezel-mid:  #cbcbc7;
-    --bezel-deep: #a6a6a1;
+    --bezel:      #eef0f1;
+    --bezel-mid:  #c6ccd0;
+    --bezel-deep: #8f979e;
 
-    --lcd:      #3a3629;
-    --lcd-deep: #211e16;
-    --lcd-lit:  #46482a;
-
-    --amber:   #d9ab3d;
+    --amber:   #e8b93c;
   }
 
   html, body {
@@ -48,7 +44,7 @@
      ====================================================================== */
   #uiLayer {
     position: fixed; inset: 0; z-index: 1;
-    background: radial-gradient(120% 90% at 50% 16%, #121212 0%, #070707 52%, #000 100%);
+    background: #000;
     opacity: 0; visibility: hidden; overflow: hidden;
   }
   #uiLayer.on { opacity: 1; visibility: visible; }
@@ -129,17 +125,17 @@
   /* the raised lip across the top of the left shell */
   .lip {
     height: 168px;
-    background: linear-gradient(180deg, #e8604f 0%, #d94b3d 64%, #c43f32 100%);
+    background: linear-gradient(180deg, #f4705f 0%, #e04935 64%, #cc3826 100%);
     clip-path: polygon(0 0, 100% 0, 100% 58%, 72% 58%, 56% 100%, 0 100%);
     display: flex; align-items: center; gap: 30px; padding: 0 34px;
   }
   .lens {
     width: 112px; height: 112px; border-radius: 50%; flex: none; position: relative;
     background:
-      radial-gradient(circle at 36% 30%, #ffffff 0%, #b9f4fb 18%, #6fe1f5 44%, #33b6dc 74%, #1a7ea6 100%);
+      radial-gradient(circle at 36% 30%, #ffffff 0%, #dff0ff 16%, #7fd3f5 42%, #2e9fd6 72%, #1f6f9c 100%);
     box-shadow:
-      0 0 0 8px #e6e6e2, 0 0 0 9px rgba(0,0,0,0.22),
-      inset 0 -10px 20px rgba(0,0,0,0.30),
+      0 0 0 8px var(--bezel), 0 0 0 9px rgba(0,0,0,0.22),
+      inset 0 -10px 20px rgba(0,0,0,0.28),
       0 0 30px 6px rgba(120, 230, 250, 0.40);
   }
   .lens::after {
@@ -160,16 +156,17 @@
   .frame {
     margin: 26px 34px 0;
     height: 372px;
-    background: linear-gradient(180deg, #e6e6e3 0%, var(--bezel) 22%, var(--bezel-mid) 84%, var(--bezel-deep) 100%);
+    background: linear-gradient(180deg, #ffffff 0%, var(--bezel) 24%, var(--bezel-mid) 86%, var(--bezel-deep) 100%);
     clip-path: polygon(0 0, 100% 0, 100% 100%, 40px 100%, 0 calc(100% - 40px));
-    padding: 16px 20px 0;
+    /* wide left and right margins so the white surround reads as a moulding */
+    padding: 16px 38px 0;
     display: flex; flex-direction: column;
   }
   .lamps { display: flex; gap: 30px; justify-content: center; margin-bottom: 11px; }
   .lamp {
     width: 12px; height: 12px; border-radius: 50%;
-    background: radial-gradient(circle at 36% 30%, #7a1d14, #4a0f08 75%);
-    box-shadow: inset 0 -1px 2px rgba(0,0,0,0.6);
+    background: radial-gradient(circle at 36% 30%, #e0402f, #8e1d0d 76%);
+    box-shadow: inset 0 -1px 2px rgba(0,0,0,0.45);
   }
   /* Light by default; the round black button inverts it. */
   .glass {
@@ -183,16 +180,16 @@
     content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 3;
     background: linear-gradient(124deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 34%, rgba(255,255,255,0) 50%);
   }
-  .foot { height: 46px; display: flex; align-items: center; padding-left: 30px; }
+  .foot { height: 46px; display: flex; align-items: center; padding-left: 12px; }
   .foot .dot {
     width: 15px; height: 15px; border-radius: 50%;
-    background: radial-gradient(circle at 36% 30%, #c4341f, #6e1607 78%);
-    box-shadow: inset 0 -1px 2px rgba(0,0,0,0.5);
+    background: radial-gradient(circle at 36% 30%, #e0402f, #8e1d0d 78%);
+    box-shadow: inset 0 -1px 2px rgba(0,0,0,0.45);
   }
   .foot .grille { margin-left: auto; display: grid; gap: 4px; }
   .foot .grille i {
     display: block; width: 58px; height: 3px;
-    background: #8f8f8a; box-shadow: 0 1px 0 rgba(255,255,255,0.7);
+    background: var(--bezel-deep); box-shadow: 0 1px 0 rgba(255,255,255,0.8);
   }
 
   /* ---------------------------------------------------------- left controls
@@ -253,8 +250,8 @@
   .hinge {
     width: 100px; height: 900px; position: relative; flex: none;
     background: linear-gradient(90deg,
-      #8a2419 0%, #b3311f 12%, #d2432f 30%, #e9604e 48%,
-      #d4473a 64%, #ad2f21 84%, #7b1f14 100%);
+      #7d1a12 0%, #a3241a 12%, #c93324 30%, #f4705f 48%,
+      #d93b2b 64%, #a3241a 84%, #7d1a12 100%);
     border-radius: 6px;
     filter: drop-shadow(0 22px 24px rgba(0,0,0,0.42));
   }
@@ -279,9 +276,9 @@
         <div class="lip">
           <div class="lens"></div>
           <div class="leds">
-            <span class="led" style="--l:#9c8c9c; --d:#5a4c5c"></span>
-            <span class="led" style="--l:#c1ad3f; --d:#6c5e14"></span>
-            <span class="led" style="--l:#4f7a4e; --d:#233e24"></span>
+            <span class="led" style="--l:#ff7a63; --d:#a32414"></span>
+            <span class="led" style="--l:#ffdc78; --d:#a9791d"></span>
+            <span class="led" style="--l:#8ee06f; --d:#2f7a28"></span>
           </div>
         </div>
 
@@ -434,12 +431,12 @@ window.PORTFOLIO = {};
   .btn.pill {
     width: 92px; height: 20px; border-radius: 999px; --lift: 3px;
   }
-  .btn.pill.red  { --face:#c8392e; --hi:#e0665a; --lo:#8d2419; --side:#5a150c; }
-  .btn.pill.blue { --face:#63b6d8; --hi:#95d5ec; --lo:#3d8aa8; --side:#285d72; }
+  .btn.pill.red  { --face:#a83326; --hi:#cf5b4b; --lo:#731e12; --side:#4a1009; }
+  .btn.pill.blue { --face:#4a9ed8; --hi:#8bcaee; --lo:#2c749f; --side:#1c5070; }
 
   .btn.white {
     width: 84px; height: 54px; font-size: 17px; --lift: 4px;
-    --face:#dedfdb; --hi:#f7f7f4; --lo:#aeafa9; --side:#7f8079; --label:#33352f;
+    --face:#eef0f1; --hi:#ffffff; --lo:#b9c0c5; --side:#8f979e; --label:#2b3138;
   }
   .btn.white.l { border-radius: 3px 0 0 3px; }
   .btn.white.r { border-radius: 0 3px 3px 0; }
@@ -448,9 +445,9 @@ window.PORTFOLIO = {};
   .btn.sphere {
     width: 74px; height: 74px; border-radius: 50%; --lift: 4px;
     background: radial-gradient(circle at 34% 27%,
-      #fbeab0 0%, #ecc45a 22%, var(--amber) 46%, #b58524 76%, #6f4d0e 100%);
+      #fff3c4 0%, #f8d868 22%, var(--amber) 46%, #a9791d 76%, #6b4a0a 100%);
     box-shadow:
-      inset 0 -6px 12px rgba(0,0,0,0.35),
+      inset 0 -6px 12px rgba(0,0,0,0.32),
       0 4px 0 #5f420b, 0 9px 12px rgba(0,0,0,0.4);
   }
   .btn.sphere::after {
@@ -464,7 +461,7 @@ window.PORTFOLIO = {};
      stack shares one left and right edge. */
   .btn.greenpad {
     width: 196px; height: 78px; border-radius: 3px; --lift: 4px;
-    --face:#383d1c; --hi:#4d5327; --lo:#252912; --side:#161909; --label:#a4ad6c;
+    --face:#5d8f3f; --hi:#84c95f; --lo:#3d6428; --side:#294318; --label:#eaffd6;
     font-size: 20px; letter-spacing: 0.06em;
     align-items: center; justify-content: center;
   }
@@ -475,23 +472,23 @@ window.PORTFOLIO = {};
   .keypad {
     display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
     border-radius: 3px; overflow: hidden;
-    box-shadow: 0 5px 0 #2a5c68, 0 6px 0 rgba(0,0,0,0.35), 0 10px 12px rgba(0,0,0,0.4);
+    box-shadow: 0 5px 0 #24617f, 0 6px 0 rgba(0,0,0,0.35), 0 10px 12px rgba(0,0,0,0.4);
   }
   .key {
     height: 60px; border-radius: 0; font-size: 13.5px; letter-spacing: 0.04em;
-    --face:#64b4c5; --hi:#86c9d6; --lo:#4a97a8; --label:#0f3a44;
+    --face:#6cc0e8; --hi:#a3dcf5; --lo:#4b9cc4; --label:#0c3350;
     box-shadow:
-      inset 1px 1px 0 rgba(255,255,255,0.28),
-      inset -1px -1px 0 #2f6b78,
-      inset 0 -3px 4px rgba(0,0,0,0.16);
+      inset 1px 1px 0 rgba(255,255,255,0.35),
+      inset -1px -1px 0 #2f7999,
+      inset 0 -3px 4px rgba(0,0,0,0.14);
     transition: transform 70ms ease, box-shadow 70ms ease, background 160ms ease, filter 160ms ease;
   }
-  .key.link { --face:#5db8a8; --hi:#84cfc1; --lo:#3f9384; --label:#0b3a32; }
-  .key.on   { --face:#e6b83d; --hi:#f6d97c; --lo:#ab8318; --label:#332604; }
+  .key.link { --face:#6fd0bb; --hi:#a6e8dc; --lo:#45a08a; --label:#093a30; }
+  .key.on   { --face:#e8b93c; --hi:#ffdc78; --lo:#a9791d; --label:#332604; }
   .key:active, .key.press {
     transform: translateY(2px);
     background: linear-gradient(179deg, var(--lo) 0%, var(--face) 80%);
-    box-shadow: inset 0 3px 6px rgba(0,0,0,0.45), inset -1px -1px 0 #2f6b78;
+    box-shadow: inset 0 3px 6px rgba(0,0,0,0.45), inset -1px -1px 0 #2f7999;
   }
   .key::before {
     content: ""; position: absolute; inset: 0;
