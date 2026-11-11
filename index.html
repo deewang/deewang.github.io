@@ -647,7 +647,7 @@ const SECTIONS = {
     lead: 'DANIEL WANG',
     sublead: 'Computer Engineering at UBC, class of 2028. Embedded firmware that has to survive a race car, and web apps that have to survive a demo.',
     rows: [
-      ['Currently', 'RF Software Developer Co-op at NETGEAR'],
+      ['Recently', 'RF Software Developer Co-op at NETGEAR'],
       ['Team', 'Formula Racing SAE — Electrical Subteam'],
       ['Based', 'Vancouver, BC']
     ],
@@ -661,6 +661,7 @@ const SECTIONS = {
     rows: [
       ['Graduates', '2028'],
       ['Honours', 'Dean’s List, 2024–2025'],
+      ['Coursework', 'Operating Systems (CPEN 331), Computing Systems I & II (CPEN 211, CPEN 212), Computer Communications (ELEC 331), Software Construction I (CPEN 221), Basic Algorithms and Data Structures (CPSC 221)'],
       ['Focus', 'Embedded systems, test automation, full-stack web']
     ]
   },
@@ -673,19 +674,21 @@ const SECTIONS = {
         role: 'RF Software Developer Co-op',
         when: 'Richmond, BC · May 2026 – Aug 2026',
         bullets: [
+          'Wrote Python lab automation scripts that control networked test instruments and devices under test over TCP/IP.',
           'Owned migration of 16 automated LTE Python test scripts from the legacy R&S CMW500 to the newer CMX500 test instrument, building adapter functions and SCPI command mappings for instrument configuration and measurement.',
-          'Compared runtimes for RF tests across both platforms, finding the CMX500 up to 2× slower. Fixed redundant reattachment cycles during channel switching and a UI-write bottleneck via non-blocking execution.',
-          'Ran test scripts to validate results against 3GPP spec, tracking bugs in Jira.',
-          'Maintained and released three internal tools for the RF team — automated test environment, automated calibration unit, and automated report generator — and added a Microsoft Teams webhook for remote test pass/fail updates.'
+          'Ran full LTE and 5G NR FR1 test suites against 3GPP specifications to validate a new mobile hotspot release.',
+          'Performed root cause analysis on failing tests by analyzing test logs and instrument measurements.',
+          'Maintained and released three internal RF team tools: automated test environment, calibration unit, and report generator.',
+          'Added a Microsoft Teams webhook (HTTP) so the team can monitor running tests remotely and get pass/fail alerts.'
         ]
       },
       {
         title: 'Vancouver Universal Medical Ltd.',
         role: 'Web Developer Intern',
-        when: 'Richmond, BC · July 2025 – Aug 2025',
+        when: 'Richmond, BC · May 2025 – Aug 2025',
         bullets: [
-          'Built and maintained the company website in WordPress for client bookings and business information.',
-          'Wrote a Python script to pull online appointments into a Google Sheets contact list and Google Calendar for scheduling.',
+          'Built and maintained the company’s client-facing website for online bookings and business information.',
+          'Wrote a Python script that syncs online client appointments to Google Calendar and a Google Sheets contact list.',
           'Automated client appointment reminders through iMessage, using appointment data pulled via the Google Calendar API.'
         ]
       }
@@ -698,24 +701,24 @@ const SECTIONS = {
     sublead: 'Electrical Subteam Member — University of British Columbia, Sept 2024 to present.',
     blocks: [
       {
+        title: 'Vehicle System Validation Board (VSVB)',
+        when: 'STM32 · FreeRTOS · CAN · USB',
+        bullets: [
+          'Designed a benchtop debugger that powers the ECU, PDM, and dashboard off-car to test drive-by-wire and power distribution.',
+          'Built the board’s STM32 firmware on FreeRTOS, running its functions as prioritized real-time tasks (migrated from a super loop).',
+          'Implemented 6 MOSFET digital channels on STM32 timers to simulate wheel speed, crank, and cam, and 10 analog channels on 12-bit SPI DACs to simulate throttle position, accelerator position, and brake pressure.',
+          'Implemented CAN message reading/writing and a Python test UI where users set signal parameters and send them to the board over USB.'
+        ]
+      },
+      {
         title: 'Strain Gauge Data Acquisition Board',
         when: 'STM32 · CAN @ 100 Hz · C / Python',
         href: 'https://github.com/deewang/Formula-Strain-Gauge-Sensor',
         bullets: [
-          'Streamed real-time a-arm load data via CAN bus at 100 Hz on STM32, synchronized with vehicle AIM accelerometer data, using ADC with DMA and STM32 HAL drivers for digital filtering.',
-          'Flashed and debugged firmware via ST-Link, validating ADC readings and signal integrity.',
-          'Soldered strain gauge amplifier and CIU PCBs. Validated output and voltage rails using oscilloscope and multimeter.',
-          'Built a Python pipeline to calibrate and convert voltage to wheel forces, and plotted strain gauge against accelerometer data.',
-          'Built the wiring harness connecting the CIU to the car’s electrical system to collect suspension load data on test days.'
-        ]
-      },
-      {
-        title: 'Vehicle System Validation Board (VSVB)',
-        when: 'Benchtop debugger · CAN · USB',
-        bullets: [
-          'Designed a benchtop debugger to power ECUs and modules for testing drive-by-wire, PDM, and dash off the car.',
-          'Built programmable potentiometers, digital waveforms, and variable-reluctance waveforms to simulate analog and digital sensors and reluctors for crank/RPM.',
-          'Implemented CAN message reading/writing and a USB software test environment for test case development.'
+          'Built a 24-channel strain gauge system to measure full A-arm loads, with amplifier PCBs and a DAQ board at each wheel.',
+          'Wrote STM32 firmware in C that samples the gauges via ADC and DMA and streams data over CAN bus at 100 Hz to the car’s logger.',
+          'Designed the amplifier and DAQ PCBs in Altium, brought up the boards, and verified voltage rails and signals with an oscilloscope and multimeter.',
+          'Built a Python post-processing pipeline that calibrates strain gauge voltages into wheel forces and plots them alongside accelerometer data.'
         ]
       }
     ]
@@ -723,18 +726,27 @@ const SECTIONS = {
 
   PROJECT: {
     no: 5, kind: 'PROJECTS',
-    lead: 'DR. POCKET',
-    sublead: 'Best Presentation Award — IEEE Engineering Design Team Competition 2026.',
     blocks: [
       {
-        title: 'drpocket.org',
-        when: 'React · Three.js · PostgreSQL · Firebase · Vercel',
+        title: 'DrPocket.org',
+        role: 'IEEE Engineering Design Team Competition 2026 — Best Presentation Award',
+        when: 'React · Three.js · Vercel · PostgreSQL · Firebase · Anthropic API',
         href: 'https://drpocket.org/',
         bullets: [
-          'Built a React frontend with an interactive 3D body model (Three.js) for symptom selection, plus chat and history panels.',
-          'Built a serverless API endpoint using Vercel Functions that combines user symptom data, 3D model selections, and medical history to call the Anthropic API, returning AI-generated health responses.',
-          'Designed a PostgreSQL database and wrote SQL queries to store and retrieve medical history and session data.',
-          'Implemented Firebase Authentication to manage secure user login and signup for persistent accounts across sessions.'
+          'Web app with a 3D body model where users pick a body region, describe symptoms, and get at-home remedies.',
+          'Built a Vercel serverless backend that sends user inputs to the Anthropic API and returns remedies.',
+          'Added a PostgreSQL database to the backend, writing SQL queries for app data, with Firebase for user accounts.'
+        ]
+      },
+      {
+        title: 'Fitting Room',
+        role: 'HelloHacks 2026 — 1st Place Overall',
+        when: 'Node.js · Express · Three.js · Puppeteer · Bodygram API · Tripo API',
+        href: 'https://devpost.com/software/fitting-room-9s5zbc',
+        bullets: [
+          'Web app that generates 3D clothing models from online product links and fits them onto the user’s 3D body scan.',
+          'Built the Node.js/Express backend, integrating the Bodygram and Tripo REST APIs to generate the 3D body model and clothing meshes.',
+          'Built a Puppeteer web scraper that pulls product photos, materials, and measurements from clothing product links.'
         ]
       }
     ]
@@ -743,9 +755,10 @@ const SECTIONS = {
   SKILLS: {
     no: 6, kind: 'SKILLS',
     rows: [
-      ['Languages', 'Python, Java, JavaScript, C, C++, Verilog, MATLAB'],
-      ['Data & tools', 'React, Pytest, Git, Jira, Agile, PostgreSQL, MySQL, Firestore'],
-      ['Embedded', 'STM32, RTOS, ADC, DMA, CAN Bus, UART']
+      ['Languages', 'Python, Java, JavaScript, C, C++, SQL, Verilog, MATLAB, HTML/CSS'],
+      ['Embedded & hardware', 'STM32, FreeRTOS, FPGA, CAN Bus, UART, SPI, USB, ADC/DAC, DMA, Timers, Altium, Oscilloscope'],
+      ['Web & data', 'React, Node.js, Express, Three.js, PostgreSQL, Firebase, Vercel, REST APIs, NumPy, Pandas, Matplotlib'],
+      ['Tools & protocols', 'Linux, Git, Jira, Pytest, Puppeteer, SCPI, TCP/IP, HTTP']
     ]
   },
 
